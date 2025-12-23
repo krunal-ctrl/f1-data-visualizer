@@ -1,0 +1,12 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+a {
+  &.active {
+    background-color: rgba(0, 240, 255, 0.1);
+    color: #00f0ff;
+    border-color: #00f0ff;
+  }
+}

@@ -1,0 +1,33 @@
+<aside class="w-64 bg-f1-surface border-r border-gray-800 flex flex-col">
+  <!-- Logo -->
+  <div class="p-6 border-b border-gray-800">
+    <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+      <span class="text-f1-secondary">🏎️</span>
+      <span>F1 Data</span>
+    </h1>
+    <p class="text-gray-400 text-sm mt-1">Analytics Hub</p>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="flex-1 p-4 overflow-y-auto">
+    <ul class="space-y-2">
+      <li *ngFor="let item of menuItems">
+        <a 
+          [routerLink]="item.route" 
+          routerLinkActive="bg-f1-accent/10 text-f1-accent border-f1-accent"
+          class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-800 transition-all border border-transparent text-gray-300 cursor-pointer">
+          <span class="text-xl">{{ item.icon }}</span>
+          <span class="font-medium">{{ item.label }}</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- Footer -->
+  <div class="p-4 border-t border-gray-800">
+    <div class="text-xs text-gray-500 text-center">
+      <p>Data from Ergast API</p>
+      <p class="mt-1">© 2024 F1 Analytics</p>
+    </div>
+  </div>
+</aside>
