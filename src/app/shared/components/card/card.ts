@@ -1,11 +1,13 @@
-import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Component, Input } from '@angular/core';
 
 @Component({
   selector: 'app-card',
-  imports: [],
+  imports: [CommonModule],
   templateUrl: './card.html',
   styleUrl: './card.scss',
 })
 export class Card {
-
+  @Input() title?: string;
+  @Input() noPadding = false;
 }
