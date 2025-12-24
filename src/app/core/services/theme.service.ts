@@ -5,7 +5,7 @@ import { Injectable, signal } from "@angular/core";
 })
 export class ThemeService {
 
-    private darkMode = signal(true);
+    private darkMode = signal(false);
     isDarkMode = this.darkMode.asReadonly();
 
     constructor() {
