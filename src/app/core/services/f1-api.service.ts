@@ -23,11 +23,12 @@ export class F1ApiService {
 
     // Driver Standings
     getDriverStandings(season?: string): Observable<any> {
+        const year = season || this.getCurrentSeason();
         if (this.useMockData) {
-            return of(MOCK_DRIVER_STANDINGS);
+            const mockData = MOCK_DRIVER_STANDINGS.find(item => item.season === year);
+            return of(mockData ? mockData.StandingsLists[0] : null);
         }
 
-        const year = season || this.getCurrentSeason();
         return this.http.get(`${this.ergastBaseUrl}/${year}/driverStandings.json`)
             .pipe(
                 map((response: any) => response.MRData.StandingsTable.StandingsLists[0]),
@@ -41,11 +42,12 @@ export class F1ApiService {
 
     // Constructor Standings
     getConstructorStandings(season?: string): Observable<any> {
+        const year = season || this.getCurrentSeason();
         if (this.useMockData) {
-            return of(MOCK_CONSTRUCTOR_STANDINGS);
+            const mockData = MOCK_CONSTRUCTOR_STANDINGS.find(item => item.season === year);
+            return of(mockData ? mockData.StandingsLists[0] : null);
         }
 
-        const year = season || this.getCurrentSeason();
         return this.http.get(`${this.ergastBaseUrl}/${year}/constructorStandings.json`)
             .pipe(
                 map((response: any) => response.MRData.StandingsTable.StandingsLists[0]),
@@ -59,11 +61,12 @@ export class F1ApiService {
 
     // Race Calendar
     getRaceCalendar(season?: string): Observable<any> {
+        const year = season || this.getCurrentSeason();
         if (this.useMockData) {
-            return of(MOCK_RACE_CALENDAR);
+            const mockData = MOCK_RACE_CALENDAR.find(item => item.season === year)
+            return of(mockData ? mockData.Races : null);
         }
 
-        const year = season || this.getCurrentSeason();
         return this.http.get(`${this.ergastBaseUrl}/${year}.json`)
             .pipe(
                 map((response: any) => response.MRData.RaceTable.Races),
