@@ -22,9 +22,9 @@ export const routes: Routes = [
     //         .then(m => m.DriverDetail)
     // },
     {
-        path: 'teams',
-        loadComponent: () => import('./features/teams/teams')
-            .then(m => m.Teams)
+        path: 'constructors',
+        loadComponent: () => import('./features/constructors/constructors')
+            .then(m => m.Constructors)
     },
     {
         path: 'races',

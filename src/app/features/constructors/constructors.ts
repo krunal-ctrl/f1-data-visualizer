@@ -2,11 +2,11 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 
 @Component({
-  selector: 'app-teams',
+  selector: 'app-constructors',
   imports: [CommonModule],
-  templateUrl: './teams.html',
-  styleUrl: './teams.scss',
+  templateUrl: './constructors.html',
+  styleUrl: './constructors.scss',
 })
-export class Teams {
+export class Constructors {
 
 }
