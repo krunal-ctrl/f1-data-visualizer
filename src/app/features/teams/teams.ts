@@ -1,8 +1,9 @@
+import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 
 @Component({
   selector: 'app-teams',
-  imports: [],
+  imports: [CommonModule],
   templateUrl: './teams.html',
   styleUrl: './teams.scss',
 })

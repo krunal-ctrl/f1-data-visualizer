@@ -1,8 +1,9 @@
+import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 
 @Component({
   selector: 'app-drivers',
-  imports: [],
+  imports: [CommonModule],
   templateUrl: './drivers.html',
   styleUrl: './drivers.scss',
 })
