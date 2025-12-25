@@ -1,0 +1,240 @@
+<div class="max-w-7xl mx-auto">
+  <!-- Loading State -->
+  <app-loading *ngIf="loading()"></app-loading>
+
+  <!-- Driver Detail Content -->
+  <div *ngIf="!loading() && driverInfo()" class="space-y-6">
+
+    <!-- Back Button -->
+    <button routerLink="/drivers"
+      class="flex items-center gap-2 text-f1-accent hover:text-f1-accent/80 transition-colors">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+      Back to Drivers
+    </button>
+
+    <!-- Driver Header -->
+    <div class="bg-gradient-to-r from-f1-primary to-f1-surface rounded-2xl p-8 border border-gray-800">
+      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div class="flex-1">
+          <div class="flex items-center gap-4 mb-4">
+            <span class="inline-flex items-center justify-center w-16 h-16 rounded-full text-2xl font-bold"
+              [class.bg-yellow-500]="driverInfo().position === '1'" [class.text-black]="driverInfo().position === '1'"
+              [class.bg-gray-400]="driverInfo().position === '2'" [class.text-black]="driverInfo().position === '2'"
+              [class.bg-orange-600]="driverInfo().position === '3'" [class.text-white]="driverInfo().position === '3'"
+              [class.bg-gray-800]="driverInfo().position > '3'" [class.text-gray-300]="driverInfo().position > '3'">
+              P{{ driverInfo().position }}
+            </span>
+            <div>
+              <div class="text-f1-accent font-mono text-sm mb-1">
+                #{{ driverInfo().Driver.permanentNumber }} • {{ driverInfo().Driver.code }}
+              </div>
+              <h1 class="text-4xl font-bold text-black dark:text-white">
+                {{ driverInfo().Driver.givenName }} {{ driverInfo().Driver.familyName }}
+              </h1>
+              <p class="text-gray-400 mt-1">
+                {{ driverInfo().Constructors[0]?.name }} • {{ driverInfo().Driver.nationality }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-3 gap-4">
+          <div class="rounded-lg p-4 text-center bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+            <div class="text-3xl font-bold text-f1-accent">{{ driverInfo().points }}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Points</div>
+          </div>
+
+          <div class="rounded-lg p-4 text-center bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+            <div class="text-3xl font-bold">{{ driverInfo().wins }}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Wins</div>
+          </div>
+
+          <div class="rounded-lg p-4 text-center bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+            <div class="text-3xl font-bold">{{ calculateAge(driverInfo().Driver.dateOfBirth) }}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Age</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-[4fr_2fr] gap-6">
+
+      <!-- LEFT COLUMN -->
+      <div class="flex flex-col gap-6">
+
+        <!-- Points Progression -->
+        <app-card title="Season Points Progression">
+          <app-line-chart [data]="pointsProgressionData()" xAxisLabel="Race" yAxisLabel="Cumulative Points"
+            [height]="300" [showLegend]="false" [tooltipTemplateRef]="pointsTooltip">
+          </app-line-chart>
+
+          <!-- Custom Tooltip Template for Points Progression -->
+          <ng-template #pointsTooltip let-model="model">
+            <div class="custom-tooltip">
+              <div class="tooltip-header">
+                <strong>{{ model.extra?.raceName }}</strong>
+              </div>
+              <div class="tooltip-content">
+                <div class="tooltip-row">
+                  <span class="tooltip-label">Round:</span>
+                  <span class="tooltip-value">{{ model.extra?.round }}</span>
+                </div>
+                <div class="tooltip-row">
+                  <span class="tooltip-label">Position:</span>
+                  <span class="tooltip-value position" [class.position-1]="model.extra?.position === 1"
+                    [class.position-2]="model.extra?.position === 2" [class.position-3]="model.extra?.position === 3">
+                    P{{ model.extra?.position }}
+                  </span>
+                </div>
+                <div class="tooltip-row">
+                  <span class="tooltip-label">Points Scored:</span>
+                  <span class="tooltip-value points">+{{ model.extra?.pointsScored }}</span>
+                </div>
+                <div class="tooltip-row total">
+                  <span class="tooltip-label">Total Points:</span>
+                  <span class="tooltip-value">{{ model.value }}</span>
+                </div>
+              </div>
+            </div>
+          </ng-template>
+
+        </app-card>
+
+        <!-- Enhanced Season Stats -->
+        <app-card title="2024 Season Statistics">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div class="text-center">
+              <div class="text-4xl font-bold text-black dark:text-white mb-2">{{ podiums }}</div>
+              <div class="text-gray-400 text-sm">Podiums</div>
+            </div>
+            <div class="text-center">
+              <div class="text-4xl font-bold text-black dark:text-white mb-2">{{ pointsFinishes }}</div>
+              <div class="text-gray-400 text-sm">Points Finishes</div>
+            </div>
+            <div class="text-center">
+              <div class="text-4xl font-bold text-black dark:text-white mb-2">{{ bestFinish }}</div>
+              <div class="text-gray-400 text-sm">Best Finish</div>
+            </div>
+            <div class="text-center">
+              <div class="text-4xl font-bold text-black dark:text-white mb-2">{{ averagePosition }}</div>
+              <div class="text-gray-400 text-sm">Avg Position</div>
+            </div>
+          </div>
+        </app-card>
+
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <app-card title="Driver Information">
+        <div class="space-y-4">
+          <div class="flex justify-between py-3 border-b border-gray-800">
+            <span class="text-gray-400">Full Name</span>
+            <span class="font-medium text-black dark:text-white">
+              {{ driverInfo().Driver.givenName }} {{ driverInfo().Driver.familyName }}
+            </span>
+          </div>
+          <div class="flex justify-between py-3 border-b border-gray-800">
+            <span class="text-gray-400">Driver Code</span>
+            <span class="font-medium text-black dark:text-white">
+              {{ driverInfo().Driver.code }}
+            </span>
+          </div>
+          <div class="flex justify-between py-3 border-b border-gray-800">
+            <span class="text-gray-400">Car Number</span>
+            <span class="font-medium text-black dark:text-white">
+              #{{ driverInfo().Driver.permanentNumber }}
+            </span>
+          </div>
+          <div class="flex justify-between py-3 border-b border-gray-800">
+            <span class="text-gray-400">Nationality</span>
+            <span class="font-medium text-black dark:text-white">
+              {{ driverInfo().Driver.nationality }}
+            </span>
+          </div>
+          <div class="flex justify-between py-3 border-b border-gray-800">
+            <span class="text-gray-400">Date of Birth</span>
+            <span class="font-medium text-black dark:text-white">
+              {{ driverInfo().Driver.dateOfBirth }}
+            </span>
+          </div>
+          <div class="flex justify-between py-3 border-b border-gray-800">
+            <span class="text-gray-400">Current Team</span>
+            <span class="font-medium text-black dark:text-white">
+              {{ driverInfo().Constructors[0]?.name }}
+            </span>
+          </div>
+          <div class="flex justify-between py-3">
+            <span class="text-gray-400">Championship Position</span>
+            <span class="text-f1-accent font-bold text-xl">
+              P{{ driverInfo().position }}
+            </span>
+          </div>
+        </div>
+      </app-card>
+
+    </div>
+
+    <!-- Points Scored Per Race -->
+    <div class="grid grid-cols-1 gap-6">
+      <app-card title="Points Scored Per Race">
+        <app-bar-chart [data]="pointsScoredByRaceData()" xAxisLabel="Race" yAxisLabel="Points" [height]="300"
+          [showLegend]="false">
+        </app-bar-chart>
+      </app-card>
+
+      <app-card title="All Race Results" [noPadding]="true">
+        <div class="overflow-x-auto max-h-96">
+          <table class="w-full">
+            <thead class="bg-gray-900 sticky top-0">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Round</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Race</th>
+                <th class="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase">Pos</th>
+                <th class="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">Points</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-800">
+              <tr *ngFor="let result of raceResults()" class="hover:bg-gray-200 dark:hover:bg-gray-900 transition-colors">
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-400">
+                  R{{ result.round }}
+                </td>
+                <td class="px-4 py-3 text-sm text-black dark:text-white">
+                  {{ result.raceName }}
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-center">
+                  <span class="inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold"
+                    [class.bg-yellow-500]="result.position === 1" [class.text-black]="result.position === 1"
+                    [class.bg-gray-400]="result.position === 2" [class.text-black]="result.position === 2"
+                    [class.bg-orange-600]="result.position === 3" [class.text-white]="result.position === 3"
+                    [class.bg-gray-800]="result.position > 3 && result.position <= 10"
+                    [class.text-gray-300]="result.position > 3 && result.position <= 10"
+                    [class.bg-red-900]="result.position > 20" [class.text-red-300]="result.position > 20">
+                    {{ result.position > 20 ? 'DNF' : result.position }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-right text-sm font-bold"
+                  [class.text-f1-accent]="result.points > 0" [class.text-gray-500]="result.points === 0">
+                  {{ result.totalPoints }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </app-card>
+    </div>
+  </div>
+  <!-- Not Found -->
+  <div *ngIf="!loading() && !driverInfo()" class="text-center py-12">
+    <div class="text-6xl mb-4">🏎️</div>
+    <h2 class="text-2xl font-bold text-black dark:text-white mb-2">Driver Not Found</h2>
+    <p class="text-gray-400 mb-6">The driver you're looking for doesn't exist.</p>
+    <button routerLink="/drivers"
+      class="bg-f1-accent text-black px-6 py-3 rounded-lg font-medium hover:bg-f1-accent/80 transition-colors">
+      Back to Drivers
+    </button>
+  </div>
+</div>

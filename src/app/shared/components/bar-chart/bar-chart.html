@@ -10,6 +10,16 @@
     [yAxisLabel]="yAxisLabel"
     [gradient]="gradient"
     [scheme]="colorScheme"
-    [customColors]="customColors">
+    [customColors]="customColors"
+    [showGridLines]="false">
+
+    <ng-container *ngIf="tooltipTemplateRef">
+      <ng-template #tooltipTemplate let-model="model">
+        <ng-container
+          *ngTemplateOutlet="tooltipTemplateRef; context: { model: model }">
+        </ng-container>
+      </ng-template>
+    </ng-container>
+
   </ngx-charts-bar-vertical>
 </div>

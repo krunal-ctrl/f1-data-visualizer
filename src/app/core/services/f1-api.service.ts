@@ -1,10 +1,12 @@
 import { HttpClient } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
 import { environment } from "../../../environments/environment";
-import { catchError, map, Observable, of } from "rxjs";
+import { catchError, forkJoin, map, Observable, of } from "rxjs";
 import { MOCK_DRIVER_STANDINGS } from "../data/mock-driver-standings.data";
 import { MOCK_CONSTRUCTOR_STANDINGS } from "../data/mock-constructor-standings.data";
 import { MOCK_RACE_CALENDAR } from "../data/mock-race-calendar.data";
+import { MOCK_RACE_RESULTS } from "../data/mock-race-results.data";
+import { MOCK_SPRINT_RESULTS } from "../data/mock-sprint-results.data";
 
 
 @Injectable({
@@ -124,6 +126,78 @@ export class F1ApiService {
                     return of(null);
                 })
             );
+    }
+
+    getDriverSprintResults(driverId: string, year: string): Observable<any[]> {
+        if (this.useMockData) {
+            const mockData = MOCK_SPRINT_RESULTS.find(item => item.season === year && item.driverId === driverId);
+            return of(mockData ? mockData.Races : []);
+        }
+
+        return this.http
+            .get(`${this.ergastBaseUrl}/${year}/drivers/${driverId}/sprint.json?limit=100`)
+            .pipe(
+                map((res: any) => res.MRData.RaceTable.Races),
+                catchError(() => of([])),
+            );
+    }
+
+    getDriverRaceResults(driverId: string, season?: string, includeSprint = true): Observable<any[]> {
+        const year = season || this.getCurrentSeason();
+
+        const races$ = this.useMockData
+            ? of(MOCK_RACE_RESULTS.find(item => item.season === year && item.driverId === driverId)?.Races ?? [])
+            : this.http
+                .get(`${this.ergastBaseUrl}/${year}/drivers/${driverId}/results.json?limit=100`)
+                .pipe(
+                    map((response: any) => response.MRData.RaceTable.Races),
+                    catchError(error => {
+                        console.error('Error fetching driver race results:', error);
+                        return of([]);
+                    })
+                );
+
+        const sprint$ = includeSprint
+            ? this.getDriverSprintResults(driverId, year)
+            : of([]);
+
+
+        return forkJoin([races$, sprint$]).pipe(
+            map(([races, sprint]: [any[], any[]]) => {
+                let cumulativePoints = 0;
+                let i = 1;
+                return races.map((race: any) => {
+                    const result = race.Results?.[0];
+                    const racePoints = Number(result?.points ?? 0);
+                    const sprintPoints = Number(sprint.find(s => s.round == race.round)?.SprintResults[0]?.points ?? 0);
+                    const totalPoints = racePoints + sprintPoints;
+
+                    cumulativePoints += totalPoints;
+
+                    return {
+                        round: Number(race.round),
+                        raceName: race.raceName,
+                        position: Number(result?.position ?? 0),
+                        points: racePoints,
+                        sprintPoints: sprintPoints,
+                        totalPoints: totalPoints,
+                        cumulativePoints
+                    };
+                });
+            })
+        );
+    }
+
+    getMultipleDriversRaceResults(driverIds: string[], season?: string): Observable<any> {
+        const requests = driverIds.map(id => this.getDriverRaceResults(id, season));
+        return forkJoin(requests).pipe(
+            map(results => {
+                return driverIds.map((id, index) => ({
+                    driverId: id,
+                    results: results[index]
+                }));
+            })
+        );
     }
 
     getTeamColor(constructorId: string): string {

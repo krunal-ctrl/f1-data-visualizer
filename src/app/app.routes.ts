@@ -16,11 +16,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/drivers/drivers')
             .then(m => m.Drivers)
     },
-    // {
-    //     path: 'drivers/:id',
-    //     loadComponent: () => import('./features/drivers/driver-detail/driver-detail')
-    //         .then(m => m.DriverDetail)
-    // },
+    {
+        path: 'drivers/:id',
+        loadComponent: () => import('./features/drivers/driver-detail/driver-detail')
+            .then(m => m.DriverDetail)
+    },
     {
         path: 'constructors',
         loadComponent: () => import('./features/constructors/constructors')

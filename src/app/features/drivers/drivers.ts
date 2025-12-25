@@ -1,11 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { BarChart } from '../../shared/components/bar-chart/bar-chart';
 import { Card } from '../../shared/components/card/card';
 import { Loading } from '../../shared/components/loading/loading';
 import { F1ApiService } from '../../core/services/f1-api.service';
+import { SeasonService } from '../../core/services/season.service';
 
 @Component({
   selector: 'app-drivers',
@@ -22,19 +23,22 @@ import { F1ApiService } from '../../core/services/f1-api.service';
 })
 export class Drivers {
   private apiService = inject(F1ApiService);
+  private seasonService = inject(SeasonService);
 
   driverStandings = signal<any>(null);
   loading = signal(true);
   searchTerm = signal('');
   selectedTeam = signal('all');
 
-  ngOnInit() {
-    this.loadDrivers();
+  constructor() {
+    effect(() => {
+      this.loadDrivers(this.seasonService.selectedSeason());
+    });
   }
 
-  private loadDrivers() {
+  private loadDrivers(season: string): void {
     this.loading.set(true);
-    this.apiService.getDriverStandings().subscribe({
+    this.apiService.getDriverStandings(season).subscribe({
       next: (data) => {
         this.driverStandings.set(data);
         this.loading.set(false);

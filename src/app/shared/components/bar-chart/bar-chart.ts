@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgxChartsModule, Color, ScaleType } from '@swimlane/ngx-charts';
 
@@ -16,6 +16,9 @@ export class BarChart {
   @Input() height: number = 300;
   @Input() customColors: any[] = [];
 
+  // tooltip
+  @Input() tooltipTemplateRef?: TemplateRef<any>;
+
   showXAxis = true;
   showYAxis = true;
   gradient = false;
@@ -26,6 +29,6 @@ export class BarChart {
     name: 'custom',
     selectable: true,
     group: ScaleType.Ordinal,
-    domain: ['#00f0ff', '#dc0000', '#ff8700', '#0090ff', '#00d2be']
+    domain: ['#00f0ff']
   }
 }

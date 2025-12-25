@@ -1,3 +1,137 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
 .chart-container {
   width: 100%;
+}
+
+::ng-deep .custom-tooltip {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 10px 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  min-width: 180px;
+}
+
+::ng-deep .dark .custom-tooltip {
+  background: #1f2937;
+  border-color: #374151;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+::ng-deep .custom-tooltip .tooltip-header {
+  color: #111827;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+::ng-deep .dark .custom-tooltip .tooltip-header {
+  color: #f9fafb;
+  border-bottom-color: #374151;
+}
+
+::ng-deep .custom-tooltip .tooltip-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+::ng-deep .custom-tooltip .tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+::ng-deep .custom-tooltip .tooltip-row.total {
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid #e5e7eb;
+  font-weight: 600;
+}
+
+::ng-deep .dark .custom-tooltip .tooltip-row.total {
+  border-top-color: #374151;
+}
+
+::ng-deep .custom-tooltip .tooltip-label {
+  color: #6b7280;
+}
+
+::ng-deep .dark .custom-tooltip .tooltip-label {
+  color: #9ca3af;
+}
+
+::ng-deep .custom-tooltip .tooltip-value {
+  color: #111827;
+  font-weight: 500;
+}
+
+::ng-deep .dark .custom-tooltip .tooltip-value {
+  color: #f9fafb;
+}
+
+::ng-deep .custom-tooltip .tooltip-value.position {
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+  font-size: 10px;
+  background: #e5e7eb;
+  color: #374151;
+}
+
+::ng-deep .dark .custom-tooltip .tooltip-value.position {
+  background: #374151;
+  color: #d1d5db;
+}
+
+::ng-deep .custom-tooltip .tooltip-value.position.position-1 {
+  background: #fbbf24;
+  color: #78350f;
+}
+
+::ng-deep .dark .custom-tooltip .tooltip-value.position.position-1 {
+  background: #fbbf24;
+  color: #78350f;
+}
+
+::ng-deep .custom-tooltip .tooltip-value.position.position-2 {
+  background: #d1d5db;
+  color: #1f2937;
+}
+
+::ng-deep .dark .custom-tooltip .tooltip-value.position.position-2 {
+  background: #d1d5db;
+  color: #1f2937;
+}
+
+::ng-deep .custom-tooltip .tooltip-value.position.position-3 {
+  background: #fb923c;
+  color: #7c2d12;
+}
+
+::ng-deep .dark .custom-tooltip .tooltip-value.position.position-3 {
+  background: #fb923c;
+  color: #7c2d12;
+}
+
+::ng-deep .custom-tooltip .tooltip-value.points {
+  color: #059669;
+  font-weight: 600;
+}
+
+::ng-deep .dark .custom-tooltip .tooltip-value.points {
+  color: #34d399;
+}
+
+::ng-deep ngx-tooltip-content:has(.custom-tooltip),
+::ng-deep .ngx-charts-tooltip-content:has(.custom-tooltip) {
+  background: transparent !important;
 }
