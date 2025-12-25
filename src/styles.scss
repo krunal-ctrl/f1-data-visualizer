@@ -21,6 +21,10 @@
   --text-color: #ffffff;
 }
 
+ngx-charts-chart text {
+  fill: var(--text-color);
+}
+
 * {
   margin: 0;
   padding: 0;

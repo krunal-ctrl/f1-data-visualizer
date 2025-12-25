@@ -125,4 +125,20 @@ export class F1ApiService {
                 })
             );
     }
+
+    getTeamColor(constructorId: string): string {
+        const colors: any = {
+            'red_bull': '#0600ef',
+            'mercedes': '#00d2be',
+            'ferrari': '#dc0000',
+            'mclaren': '#ff8700',
+            'alpine': '#037af0',
+            'aston_martin': '#016860',
+            'haas': '#ffffff',
+            'rb': '#0000fe',
+            'williams': '#01a3e6',
+            'sauber': '#02ce05'
+        };
+        return colors[constructorId] || '#00f0ff';
+    }
 }

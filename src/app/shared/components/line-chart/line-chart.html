@@ -1,0 +1,16 @@
+<div class="chart-container" [style.height.px]="height">
+  <ngx-charts-line-chart
+    [results]="data"
+    [xAxis]="showXAxis"
+    [yAxis]="showYAxis"
+    [legend]="showLegend"
+    [showXAxisLabel]="showXAxisLabel"
+    [showYAxisLabel]="showYAxisLabel"
+    [xAxisLabel]="xAxisLabel"
+    [yAxisLabel]="yAxisLabel"
+    [timeline]="timeline"
+    [autoScale]="autoScale"
+    [scheme]="colorScheme"
+    [customColors]="customColors">
+  </ngx-charts-line-chart>
+</div>
