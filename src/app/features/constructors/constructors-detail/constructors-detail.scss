@@ -1,0 +1,27 @@
+.sprint-points {
+  margin-left: 4px;
+  opacity: 0.7;
+  font-size: 0.85em;
+}
+
+.tooltip-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.tooltip-header .round {
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0.7;
+  text-transform: uppercase;
+}
+
+.tooltip-header .race-name {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.2;
+}

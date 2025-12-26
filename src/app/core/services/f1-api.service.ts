@@ -7,6 +7,8 @@ import { MOCK_CONSTRUCTOR_STANDINGS } from "../data/mock-constructor-standings.d
 import { MOCK_RACE_CALENDAR } from "../data/mock-race-calendar.data";
 import { MOCK_RACE_RESULTS } from "../data/mock-race-results.data";
 import { MOCK_SPRINT_RESULTS } from "../data/mock-sprint-results.data";
+import { MOCK_TEAM_PERFORMANCE } from "../data/mock-team-performance.data";
+import { MOCK_SPRINT_TEAM_PERFORMANCE } from "../data/mock-sprint-team-performance.data";
 
 
 @Injectable({
@@ -142,6 +144,20 @@ export class F1ApiService {
             );
     }
 
+    getConstructorsSprintResults(constructorId: string, year: string): Observable<any[]> {
+        if (this.useMockData) {
+            const mockData = MOCK_SPRINT_TEAM_PERFORMANCE.find(item => item.season === year && item.constructorId === constructorId);
+            return of(mockData ? mockData.Races : []);
+        }
+
+        return this.http
+            .get(`${this.ergastBaseUrl}/${year}/constructors/${constructorId}/sprint.json?limit=100`)
+            .pipe(
+                map((res: any) => res.MRData.RaceTable.Races),
+                catchError(() => of([])),
+            );
+    }
+
     getDriverRaceResults(driverId: string, season?: string, includeSprint = true): Observable<any[]> {
         const year = season || this.getCurrentSeason();
 
@@ -200,19 +216,83 @@ export class F1ApiService {
         );
     }
 
-    getTeamColor(constructorId: string): string {
-        const colors: any = {
-            'red_bull': '#0600ef',
-            'mercedes': '#00d2be',
-            'ferrari': '#dc0000',
-            'mclaren': '#ff8700',
-            'alpine': '#037af0',
-            'aston_martin': '#016860',
-            'haas': '#ffffff',
-            'rb': '#0000fe',
-            'williams': '#01a3e6',
-            'sauber': '#02ce05'
-        };
-        return colors[constructorId] || '#00f0ff';
+    getConstructorRaceResults(constructorId: string, season?: string, includeSprint: boolean = true): Observable<any[]> {
+        const year = season || this.getCurrentSeason();
+
+        const races$ = this.useMockData
+            ? of(MOCK_TEAM_PERFORMANCE.find(item => item.season === year && item.constructorId === constructorId)?.Races ?? [])
+            : this.http
+                .get(`${this.ergastBaseUrl}/${year}/constructors/${constructorId}/results.json?limit=100`)
+                .pipe(
+                    map((response: any) => response.MRData.RaceTable.Races),
+                    catchError(error => {
+                        console.error('Error fetching driver race results:', error);
+                        return of([]);
+                    })
+                );
+
+        const sprint$ = includeSprint
+            ? this.getConstructorsSprintResults(constructorId, year)
+            : of([]);
+
+        // Real API implementation
+        return forkJoin([races$, sprint$]).pipe(
+            map(([races, sprint]: [any[], any[]]) => {
+                let cumulativePoints = 0;
+
+                return races.map((race: any) => {
+
+                    const raceResults = race.Results ?? [];
+                    const racePoints = raceResults.reduce(
+                        (sum: number, r: any) => sum + Number(r.points ?? 0),
+                        0
+                    );
+
+                    const sprintRace = sprint.find(s => s.round == race.round);
+                    const sprintResults = sprintRace?.SprintResults ?? [];
+                    const sprintPoints = sprintResults.reduce(
+                        (sum: number, r: any) => sum + Number(r.points ?? 0),
+                        0
+                    );
+
+                    const totalPoints = racePoints + sprintPoints;
+                    cumulativePoints += totalPoints;
+
+                    return {
+                        round: Number(race.round),
+                        raceName: race.raceName,
+                        // position: Number(result?.position ?? 0),
+                        points: racePoints,
+                        sprintPoints: sprintPoints,
+                        totalPoints: totalPoints,
+                        cumulativePoints,
+                        sprintResults: sprint.find(s => s.round == race.round)?.SprintResults ?? [],
+                        ...race,
+                    };
+                });
+            }),
+            catchError(error => {
+                console.error('Error fetching team race results:', error);
+                return of([]);
+            })
+        );
     }
+
+    getConstructorDrivers(constructorId: string, season?: string, includeSprint: boolean = true): Observable<any[]> {
+        const year = season || this.getCurrentSeason();
+
+        // Get drivers from standings who belong to this team
+        const raceResults$ = this.getConstructorRaceResults(constructorId, year, includeSprint);
+        return of(this.getDriverBreakDownForRace(raceResults$));
+    }
+
+    getDriverBreakDownForRace(race: any): any[] {
+        return race.Results.map((r: any) => ({
+            Driver: r.Driver,
+            points: Number(r.points),
+            sprintPoints: Number(race.sprintResults?.find((s: any) => s.Driver.driverId === r.Driver.driverId)?.points ?? 0),
+            position: r.position
+        }))
+    }
+
 }

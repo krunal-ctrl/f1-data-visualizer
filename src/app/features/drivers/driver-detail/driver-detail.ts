@@ -25,6 +25,7 @@ export class DriverDetail {
   private apiService = inject(F1ApiService);
   private route = inject(ActivatedRoute);
   private seasonService = inject(SeasonService);
+  selectedSeason = this.seasonService.selectedSeason();
 
   driverId = signal<string>('');
   driverInfo = signal<any>(null);
@@ -80,6 +81,7 @@ export class DriverDetail {
     this.route.params.subscribe(params => {
       this.driverId.set(params['id']);
       effect(() => {
+        this.selectedSeason = this.seasonService.selectedSeason();
         this.fetchDriverInfo(this.seasonService.selectedSeason());
       });
     });
@@ -94,7 +96,7 @@ export class DriverDetail {
         );
         this.driverInfo.set(driver);
         this.loading.set(false);
-        if (driver) this.loadRaceResults();
+        if (driver) this.loadRaceResults(season);
       },
       error: (err) => {
         console.error('Error loading driver:', err);
@@ -103,9 +105,9 @@ export class DriverDetail {
     });
   }
 
-  private loadRaceResults(): void {
+  private loadRaceResults(season: string): void {
     this.loading.set(true);
-    this.apiService.getDriverRaceResults(this.driverId(), this.seasonService.selectedSeason()).subscribe({
+    this.apiService.getDriverRaceResults(this.driverId(), season).subscribe({
       next: (results) => {
         this.raceResults.set(results);
         this.loading.set(false);

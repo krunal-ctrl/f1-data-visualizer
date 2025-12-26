@@ -7,6 +7,7 @@ import { Card } from '../../shared/components/card/card';
 import { Loading } from '../../shared/components/loading/loading';
 import { F1ApiService } from '../../core/services/f1-api.service';
 import { SeasonService } from '../../core/services/season.service';
+import { getTeamPrimaryColor } from '../../shared/utils/team-colors.util';
 
 @Component({
   selector: 'app-drivers',
@@ -107,6 +108,6 @@ export class Drivers {
   }
 
   getTeamColor(constructorId: string): string {
-    return this.apiService.getTeamColor(constructorId);
+    return getTeamPrimaryColor(constructorId);
   }
 }
