@@ -3,6 +3,38 @@
   height: 100%;
 }
 
+.sidebar {
+  width: 16rem; // 64 * 4px = 256px
+  height: 100%;
+  position: relative;
+
+  // Desktop - always visible
+  @media (min-width: 1024px) {
+    transform: translateX(0) !important;
+    position: relative;
+  }
+
+  // Mobile - collapsible
+  @media (max-width: 1023px) {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+  }
+}
+
+.sidebar-closed {
+  @media (max-width: 1023px) {
+    transform: translateX(-100%);
+  }
+}
+
+.sidebar-open {
+  @media (max-width: 1023px) {
+    transform: translateX(0);
+  }
+}
+
 a {
   &.active {
     background-color: rgba(0, 240, 255, 0.1);

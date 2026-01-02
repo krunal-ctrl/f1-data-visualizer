@@ -1,7 +1,18 @@
 <header class="bg-f1-surface border-b border-gray-800 dark:border-gray-200 px-6 py-4">
   <div class="flex items-center justify-between">
-    <!-- Season Selector -->
+    <!-- Left Side: Hamburger + Season Selector -->
     <div class="flex items-center gap-4">
+
+      <!-- Hamburger Menu (Mobile Only) -->
+      <button 
+        (click)="toggleSidebar()"
+        class="lg:hidden p-2 rounded-lg hover:bg-gray-800 transition-colors">
+        <svg class="w-6 h-6 text-black dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+
+      <!-- Season Selector -->
       <select 
         [ngModel]="selectedSeason()"
         (ngModelChange)="onSeasonChange($event)"
@@ -13,10 +24,10 @@
     <!-- Actions -->
     <div class="flex items-center gap-4">
       <!-- Search -->
-      <input 
+      <!-- <input 
         type="text" 
         placeholder="Search drivers, teams..." 
-        class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-f1-accent transition-colors w-64 placeholder-gray-500 dark:placeholder-gray-400">
+        class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-f1-accent transition-colors w-64 placeholder-gray-500 dark:placeholder-gray-400"> -->
       
       <!-- Theme Toggle -->
       <button 

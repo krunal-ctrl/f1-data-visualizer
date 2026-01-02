@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ThemeService } from '../../../core/services/theme.service';
 import { SeasonService } from '../../../core/services/season.service';
@@ -16,6 +16,7 @@ export class Header {
 
   isDarkMode = this.themeService.isDarkMode;
   selectedSeason = this.seasonService.selectedSeason;
+  toggleSidebarEvent = output<void>(); // Output event for parent
 
   seasonOptions = computed(() => {
     const current = new Date().getFullYear();
@@ -28,5 +29,9 @@ export class Header {
 
   onSeasonChange(season: string): void {
     this.seasonService.setSeason(season);
+  }
+
+  toggleSidebar(): void {
+    this.toggleSidebarEvent.emit();
   }
 }

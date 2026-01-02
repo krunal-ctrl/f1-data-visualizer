@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { Header } from '../../shared/components/header/header';
 import { Sidebar } from '../../shared/components/sidebar/sidebar';
@@ -11,5 +11,9 @@ import { Sidebar } from '../../shared/components/sidebar/sidebar';
   styleUrl: './main-layout.scss',
 })
 export class MainLayout {
+  @ViewChild(Sidebar) sidebar!: Sidebar;
 
+  onToggleSidebar(): void {
+    this.sidebar.toggleSidebar();
+  }
 }
