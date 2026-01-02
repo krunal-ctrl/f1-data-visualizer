@@ -1,7 +1,266 @@
 <div class="max-w-7xl mx-auto">
-  <div class="bg-f1-surface rounded-xl border border-gray-800 p-12 text-center">
-    <div class="text-6xl mb-4">📈</div>
-    <h2 class="text-3xl font-bold text-black dark:text-white mb-2">Analytics Page</h2>
-    <p class="text-gray-400">Coming soon</p>
+  <!-- Loading State -->
+  <app-loading *ngIf="loading()"></app-loading>
+
+  <!-- Analytics Content -->
+  <div *ngIf="!loading()" class="space-y-6">
+    
+    <!-- Header -->
+    <div>
+      <h1 class="text-3xl font-bold text-black dark:text-white">Analytics Dashboard</h1>
+      <p class="text-gray-400 mt-1">Advanced insights and performance analysis</p>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div class="bg-f1-surface rounded-lg p-6 border border-gray-800">
+        <div class="text-gray-400 text-sm mb-2">Championship Leader</div>
+        <div class="text-2xl font-bold text-black dark:text-white">
+          {{ statisticalLeaders().mostPoints?.Driver.familyName || '-' }}
+        </div>
+        <div class="text-f1-accent text-sm mt-1">
+          {{ statisticalLeaders().mostPoints?.points || '0' }} points
+        </div>
+      </div>
+
+      <div class="bg-f1-surface rounded-lg p-6 border border-gray-800">
+        <div class="text-gray-400 text-sm mb-2">Most Wins</div>
+        <div class="text-2xl font-bold text-black dark:text-white">
+          {{ statisticalLeaders().mostWins?.Driver.familyName || '-' }}
+        </div>
+        <div class="text-f1-accent text-sm mt-1">
+          {{ statisticalLeaders().mostWins?.wins || '0' }} victories
+        </div>
+      </div>
+
+      <div class="bg-f1-surface rounded-lg p-6 border border-gray-800">
+        <div class="text-gray-400 text-sm mb-2">Most Consistent</div>
+        <div class="text-2xl font-bold text-black dark:text-white">
+          {{ statisticalLeaders().mostConsistent?.Driver.familyName || '-' }}
+        </div>
+        <div class="text-f1-accent text-sm mt-1">
+          {{ (statisticalLeaders().mostConsistent?.consistency || 0).toFixed(1) }} pts/race
+        </div>
+      </div>
+
+      <div class="bg-f1-surface rounded-lg p-6 border border-gray-800">
+        <div class="text-gray-400 text-sm mb-2">Races Completed</div>
+        <div class="text-2xl font-bold text-black dark:text-white">
+          {{ getCompletedRaces() }} / {{ raceCalendar().length }}
+        </div>
+        <div class="text-f1-accent text-sm mt-1">
+          {{ getRacesRemaining() }} remaining
+        </div>
+      </div>
+    </div>
+
+    <!-- Championship Prediction & Points Distribution -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      
+      <!-- Championship Prediction -->
+      <app-card title="Championship Prediction">
+        <div class="space-y-4">
+          <p class="text-gray-400 text-sm">
+            Based on current standings and remaining races
+          </p>
+          <app-pie-chart 
+            [data]="championshipPrediction()"
+            [height]="300"
+            [showLegend]="true"
+            [showLabels]="true"
+            legendTitle="Drivers">
+          </app-pie-chart>
+          <div class="mt-4 p-4 bg-gray-100 dark:bg-gray-900 rounded-lg">
+            <div class="text-xs text-gray-400 mb-2">Analysis</div>
+            <div class="text-sm text-gray-400">
+              With {{ getRacesRemaining() }} races remaining, 
+              {{ championshipPrediction()[0]?.name }} has a 
+              <span class="text-f1-accent font-bold">{{ championshipPrediction()[0]?.value }}%</span> 
+              chance of winning the championship.
+            </div>
+          </div>
+        </div>
+      </app-card>
+
+      <!-- Points Distribution -->
+      <app-card title="Points Distribution (Top 5)">
+        <app-pie-chart 
+          [data]="pointsDistribution()"
+          [height]="350"
+          [showLegend]="true"
+          legendTitle="Drivers">
+        </app-pie-chart>
+      </app-card>
+
+    </div>
+
+    <!-- Points Progression -->
+    <div class="grid grid-cols-1 gap-6">
+      <app-card title="Championship Battle - Points Progression">
+        <app-area-chart 
+          [data]="pointsProgressionData()"
+          xAxisLabel="Race"
+          yAxisLabel="Points"
+          [height]="400"
+          [showLegend]="true">
+        </app-area-chart>
+      </app-card>
+    </div>
+
+    <!-- Wins Distribution & Team Performance -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      
+      <!-- Wins Distribution -->
+      <app-card title="Race Wins Distribution">
+        <app-bar-chart 
+          [data]="winsDistribution()"
+          xAxisLabel="Driver"
+          yAxisLabel="Wins"
+          [height]="350">
+        </app-bar-chart>
+      </app-card>
+
+      <!-- Team Performance -->
+      <app-card title="Constructor Standings">
+        <app-bar-chart 
+          [data]="teamPerformanceData()"
+          xAxisLabel="Team"
+          yAxisLabel="Points"
+          [height]="350">
+        </app-bar-chart>
+      </app-card>
+
+    </div>
+
+    <div class="grid grid-cols-1 gap-6">
+       <!-- Head-to-Head Comparison -->
+       <app-card title="Driver Comparison">
+         <div class="space-y-6">
+           <!-- Driver Selection -->
+           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div>
+               <label class="text-gray-400 text-sm mb-2 block">Driver 1</label>
+               <select 
+                 [(ngModel)]="selectedDriver1"
+                 class="w-full bg-gray-100 dark:bg-gray-900 text-black dark:text-white px-4 py-2 rounded-lg border border-gray-700 focus:outline-none focus:border-f1-accent transition-colors">
+                 <option *ngFor="let driver of drivers" [value]="driver.Driver.driverId">
+                   {{ driver.Driver.givenName }} {{ driver.Driver.familyName }}
+                 </option>
+               </select>
+             </div>
+             <div>
+               <label class="text-gray-400 text-sm mb-2 block">Driver 2</label>
+               <select 
+                 [(ngModel)]="selectedDriver2"
+                 class="w-full bg-gray-100 dark:bg-gray-900 text-black dark:text-white px-4 py-2 rounded-lg border border-gray-700 focus:outline-none focus:border-f1-accent transition-colors">
+                 <option *ngFor="let driver of drivers" [value]="driver.Driver.driverId">
+                   {{ driver.Driver.givenName }} {{ driver.Driver.familyName }}
+                 </option>
+               </select>
+             </div>
+           </div>
+   
+           <!-- Comparison Stats -->
+           <div *ngIf="comparisonData()" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+             
+             <!-- Driver 1 Stats -->
+             <div class="bg-gray-100 dark:bg-gray-900 rounded-lg p-6 border border-gray-800">
+               <h3 class="text-lg font-bold text-black dark:text-white mb-4">{{ comparisonData()!.driver1.name }}</h3>
+               <div class="space-y-3">
+                 <div class="flex justify-between items-center">
+                   <span class="text-gray-400">Position:</span>
+                   <span class="text-black dark:text-white font-bold">P{{ comparisonData()!.driver1.position }}</span>
+                 </div>
+                 <div class="flex justify-between items-center">
+                   <span class="text-gray-400">Points:</span>
+                   <span class="text-f1-accent font-bold">{{ comparisonData()!.driver1.points }}</span>
+                 </div>
+                 <div class="flex justify-between items-center">
+                   <span class="text-gray-400">Wins:</span>
+                   <span class="text-black dark:text-white font-bold">{{ comparisonData()!.driver1.wins }}</span>
+                 </div>
+                 <div class="flex justify-between items-center">
+                   <span class="text-gray-400">Avg Points/Race:</span>
+                   <span class="text-black dark:text-white font-bold">{{ comparisonData()!.driver1.avgPointsPerRace }}</span>
+                 </div>
+               </div>
+             </div>
+   
+             <!-- Driver 2 Stats -->
+             <div class="bg-gray-100 dark:bg-gray-900 rounded-lg p-6 border border-gray-800">
+               <h3 class="text-lg font-bold text-black dark:text-white mb-4">{{ comparisonData()!.driver2.name }}</h3>
+               <div class="space-y-3">
+                 <div class="flex justify-between items-center">
+                   <span class="text-gray-400">Position:</span>
+                   <span class="text-black dark:text-white font-bold">P{{ comparisonData()!.driver2.position }}</span>
+                 </div>
+                 <div class="flex justify-between items-center">
+                   <span class="text-gray-400">Points:</span>
+                   <span class="text-f1-accent font-bold">{{ comparisonData()!.driver2.points }}</span>
+                 </div>
+                 <div class="flex justify-between items-center">
+                   <span class="text-gray-400">Wins:</span>
+                   <span class="text-black dark:text-white font-bold">{{ comparisonData()!.driver2.wins }}</span>
+                 </div>
+                 <div class="flex justify-between items-center">
+                   <span class="text-gray-400">Avg Points/Race:</span>
+                   <span class="text-black dark:text-white font-bold">{{ comparisonData()!.driver2.avgPointsPerRace }}</span>
+                 </div>
+               </div>
+             </div>
+   
+           </div>
+   
+           <!-- Comparison Chart -->
+           <div *ngIf="comparisonChartData().length > 0">
+             <app-bar-chart 
+               [data]="comparisonChartData()[0].series"
+               xAxisLabel="Driver"
+               yAxisLabel="Value"
+               [height]="300">
+             </app-bar-chart>
+           </div>
+   
+         </div>
+       </app-card>
+   
+       <!-- Performance Insights -->
+       <app-card title="Key Insights">
+         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+           <div class="bg-gray-100 dark:bg-gray-900 rounded-lg p-4">
+             <div class="flex items-center gap-3 mb-2">
+               <div class="text-2xl">🏆</div>
+               <div class="text-sm font-semibold text-gray-700">Dominance</div>
+             </div>
+             <p class="text-sm text-gray-400">
+               {{ statisticalLeaders().mostWins?.Driver.familyName || 'N/A' }} leads with 
+               {{ statisticalLeaders().mostWins?.wins || 0 }} wins this season
+             </p>
+           </div>
+   
+           <div class="bg-gray-100 dark:bg-gray-900 rounded-lg p-4">
+             <div class="flex items-center gap-3 mb-2">
+               <div class="text-2xl">📊</div>
+               <div class="text-sm font-semibold text-gray-700">Consistency</div>
+             </div>
+             <p class="text-sm text-gray-400">
+               {{ statisticalLeaders().mostConsistent?.Driver.familyName || 'N/A' }} averages 
+               {{ (statisticalLeaders().mostConsistent?.consistency || 0).toFixed(1) }} points per race
+             </p>
+           </div>
+   
+           <div class="bg-gray-100 dark:bg-gray-900 rounded-lg p-4">
+             <div class="flex items-center gap-3 mb-2">
+               <div class="text-2xl">⚡</div>
+               <div class="text-sm font-semibold text-gray-700">Title Race</div>
+             </div>
+             <p class="text-sm text-gray-400">
+               {{ getRacesRemaining() }} races remaining to decide the championship
+             </p>
+           </div>
+         </div>
+       </app-card>
+     </div>
+
   </div>
 </div>

@@ -1,0 +1,25 @@
+<div class="chart-container" [style.height.px]="height">
+  <ngx-charts-area-chart
+    [results]="data"
+    [xAxis]="showXAxis"
+    [yAxis]="showYAxis"
+    [legend]="showLegend"
+    [showXAxisLabel]="showXAxisLabel"
+    [showYAxisLabel]="showYAxisLabel"
+    [xAxisLabel]="xAxisLabel"
+    [yAxisLabel]="yAxisLabel"
+    [timeline]="timeline"
+    [autoScale]="autoScale"
+    [gradient]="gradient"
+    [scheme]="colorScheme">
+
+    <ng-container *ngIf="tooltipTemplateRef">
+      <ng-template #tooltipTemplate let-model="model">
+        <ng-container
+          *ngTemplateOutlet="tooltipTemplateRef; context: { model: model }">
+        </ng-container>
+      </ng-template>
+    </ng-container>
+
+  </ngx-charts-area-chart>
+</div>

@@ -1,0 +1,21 @@
+<div class="chart-container" [style.height.px]="height">
+  <ngx-charts-pie-chart
+    [results]="data"
+    [legend]="showLegend"
+    [labels]="showLabels"
+    [gradient]="gradient"
+    [doughnut]="isDoughnut"
+    [scheme]="colorScheme"
+    [legendTitle]="legendTitle"  
+  >
+
+    <ng-container *ngIf="tooltipTemplateRef">
+      <ng-template #tooltipTemplate let-model="model">
+        <ng-container
+          *ngTemplateOutlet="tooltipTemplateRef; context: { model: model }">
+        </ng-container>
+      </ng-template>
+    </ng-container>
+
+  </ngx-charts-pie-chart>
+</div>

@@ -1,0 +1,41 @@
+::ng-deep .bar-tooltip {
+  background: rgba(26, 26, 26, 0.98);
+  border: 1px solid #00f0ff;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 4px 20px rgba(0, 240, 255, 0.3);
+  min-width: 180px;
+}
+
+::ng-deep .bar-tooltip .tooltip-header {
+  color: #00f0ff;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+::ng-deep .bar-tooltip .tooltip-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+::ng-deep .bar-tooltip .tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+::ng-deep .bar-tooltip .tooltip-label {
+  color: #9ca3af;
+}
+
+::ng-deep .bar-tooltip .tooltip-value {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+::ng-deep ngx-tooltip-content:has(.bar-tooltip),
+::ng-deep .ngx-charts-tooltip-content:has(.bar-tooltip) {
+  background: transparent !important;
+}
