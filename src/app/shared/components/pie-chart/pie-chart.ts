@@ -29,12 +29,8 @@ export class PieChart {
   @Input() tooltipTemplateRef?: TemplateRef<any>;
 
   ngAfterViewInit() {
-    setTimeout(() => this.chart.update(), 0);
+    setTimeout(() => this.chart?.update(), 0);
   }
-
-  // ngOnDestroy() {
-  //   this.ro.disconnect();
-  // }
 
   colorScheme: Color = {
     name: 'custom',
