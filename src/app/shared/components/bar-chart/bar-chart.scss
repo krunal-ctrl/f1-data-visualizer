@@ -1,13 +1,3 @@
-:host {
-  display: block;
-  width: 100%;
-}
-
-.chart-container {
-  width: 100%;
-  overflow-x: hidden;
-}
-
 ::ng-deep .bar-tooltip {
   background: rgba(26, 26, 26, 0.98);
   border: 1px solid #00f0ff;

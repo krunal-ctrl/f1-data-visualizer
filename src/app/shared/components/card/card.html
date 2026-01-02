@@ -1,13 +1,13 @@
-<div class="bg-f1-surface rounded-xl border border-gray-800 overflow-hidden hover:border-grey-700 transition-all" [class.p-6]="!noPadding">
+<div class="bg-f1-surface rounded-xl border border-gray-800 overflow-hidden hover:border-grey-700 transition-all p-6">
     
     <!-- Header -->
-    <div *ngIf="title" class="flex items-center justify-between mb-4" [class.p-6]="noPadding" [class.pb-4]="noPadding">
+    <div *ngIf="title" class="flex items-center justify-between mb-4" [class.pb-4]="noPadding">
         <h3 class="text-xl font-bold text-black dark:text-white">{{ title }}</h3>
         <ng-content select="[header-actions]"></ng-content>
     </div>
 
     <!-- Content -->
-    <div [class.p-6]="noPadding" [class.pt-0]="noPadding && title">
+    <div [class.pt-0]="noPadding && title">
         <ng-content></ng-content>
     </div>
 </div>
