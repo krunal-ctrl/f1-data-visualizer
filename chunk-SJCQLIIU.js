@@ -1,0 +1,1 @@
+import{R as n,ja as r}from"./chunk-VMW2IAQ2.js";var o=class e{selectedSeason=r(this.getCurrentSeason());getCurrentSeason(){return new Date().getFullYear().toString()}setSeason(t){this.selectedSeason.set(t)}static \u0275fac=function(a){return new(a||e)};static \u0275prov=n({token:e,factory:e.\u0275fac,providedIn:"root"})};export{o as a};
