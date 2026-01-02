@@ -37,6 +37,11 @@ export const routes: Routes = [
             .then(m => m.Races)
     },
     {
+        path: 'races/:season/:round',
+        loadComponent: () => import('./features/races/race-details/race-details')
+            .then(m => m.RaceDetails)
+    },
+    {
         path: 'circuits',
         loadComponent: () => import('./features/circuits/circuits')
             .then(m => m.Circuits)

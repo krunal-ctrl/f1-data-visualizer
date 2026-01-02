@@ -1,0 +1,303 @@
+<div class="max-w-7xl mx-auto">
+    <!-- Loading State -->
+    <app-loading *ngIf="loading()"></app-loading>
+
+    <!-- Race Detail Content -->
+    <div *ngIf="!loading() && raceDetails()" class="space-y-6">
+
+        <!-- Back Button -->
+        <button routerLink="/races"
+            class="flex items-center gap-2 text-f1-accent hover:text-f1-accent/80 transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Races
+        </button>
+
+        <!-- Race Header -->
+        <div class="bg-gradient-to-r from-f1-primary to-f1-surface rounded-2xl p-8 border border-gray-800">
+            <div class="mb-4">
+                <div class="text-f1-accent text-sm font-semibold mb-2">
+                    ROUND {{ raceDetails().round }} • {{ raceDetails().season }}
+                </div>
+                <h1 class="text-4xl font-bold text-black dark:text-white mb-2">
+                    {{ raceDetails().raceName }}
+                </h1>
+                <p class="text-gray-600 dark:text-gray-300 text-lg">
+                    {{ raceDetails().Circuit.circuitName }}
+                </p>
+                <p class="text-gray-400 mt-1">
+                    {{ raceDetails().Circuit.Location.locality }}, {{ raceDetails().Circuit.Location.country }}
+                </p>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                <div class="bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg p-4">
+                    <div class="text-gray-400 text-xs mb-1">Winner</div>
+                    <div class="text-black dark:text-white font-bold">{{ winner?.Driver.familyName }}</div>
+                </div>
+                <div class="bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg p-4">
+                    <div class="text-gray-400 text-xs mb-1">Fastest Lap</div>
+                    <div class="text-black dark:text-white font-bold">{{ fastestLapDriver?.Driver.familyName || 'N/A' }}
+                    </div>
+                </div>
+                <div class="bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg p-4">
+                    <div class="text-gray-400 text-xs mb-1">Total Laps</div>
+                    <div class="text-black dark:text-white font-bold">{{ winner?.laps || 'N/A' }}</div>
+                </div>
+                <div class="bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg p-4">
+                    <div class="text-gray-400 text-xs mb-1">DNFs</div>
+                    <div class="text-black dark:text-white font-bold">{{ dnfCount }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Podium -->
+        <div class="grid grid-cols-1 gap-6">
+            <app-card title="Podium">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div *ngFor="let driver of podium; let i = index"
+                        class="podium-card bg-gray-100 dark:bg-gray-900 rounded-lg p-6 text-center border-2 transition-all"
+                        [class.border-yellow-500]="i === 0" [class.border-gray-400]="i === 1"
+                        [class.border-orange-600]="i === 2">
+
+                        <!-- Position Badge -->
+                        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full text-2xl font-bold mb-4"
+                            [class.bg-yellow-500]="i === 0" [class.text-black]="i === 0" [class.bg-gray-400]="i === 1"
+                            [class.text-black]="i === 1" [class.bg-orange-600]="i === 2" [class.text-white]="i === 2">
+                            {{ driver.position }}
+                        </div>
+
+                        <!-- Driver Info -->
+                        <div class="mb-4">
+                            <h3 class="text-xl font-bold text-black dark:text-white">
+                                {{ driver.Driver.givenName }} {{ driver.Driver.familyName }}
+                            </h3>
+                            <p class="text-sm text-gray-400 mt-1">{{ driver.Constructor.name }}</p>
+                        </div>
+
+                        <!-- Stats -->
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Grid:</span>
+                                <span class="text-black dark:text-white font-medium">P{{ driver.grid }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Time:</span>
+                                <span class="text-black dark:text-white font-medium">{{ formatTime(driver.Time?.time ||
+                                    'N/A') }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Points:</span>
+                                <span class="text-f1-accent font-bold">{{ driver.points }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </app-card>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex gap-2 border-b border-gray-800">
+            <button (click)="activeTab.set('results')" class="px-6 py-3 font-medium transition-colors"
+                [class.text-f1-accent]="activeTab() === 'results'" [class.border-b-2]="activeTab() === 'results'"
+                [class.border-f1-accent]="activeTab() === 'results'" [class.text-gray-400]="activeTab() !== 'results'">
+                Race Results
+            </button>
+            <button (click)="activeTab.set('qualifying')" class="px-6 py-3 font-medium transition-colors"
+                [class.text-f1-accent]="activeTab() === 'qualifying'" [class.border-b-2]="activeTab() === 'qualifying'"
+                [class.border-f1-accent]="activeTab() === 'qualifying'"
+                [class.text-gray-400]="activeTab() !== 'qualifying'">
+                Qualifying
+            </button>
+        </div>
+
+        <!-- Race Results Tab -->
+        <div class="grid grid-cols-1 gap-6" *ngIf="activeTab() === 'results'">
+            <app-card title="Race Results" [noPadding]="true">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-200 dark:bg-gray-900">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-900 dark:text-gray-400 uppercase">Pos</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-900 dark:text-gray-400 uppercase">Driver</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-900 dark:text-gray-400 uppercase">Team</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-900 dark:text-gray-400 uppercase">Grid</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-900 dark:text-gray-400 uppercase">Time/Status</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-900 dark:text-gray-400 uppercase">Points</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-800">
+                            <tr *ngFor="let result of raceDetails().Results"
+                                class="hover:bg-gray-200 dark:hover:bg-gray-900 transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap"> <span
+                                        class="inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold"
+                                        [class.bg-yellow-500]="+result.position === 1"
+                                        [class.text-black]="+result.position === 1"
+                                        [class.bg-gray-400]="+result.position === 2"
+                                        [class.text-black]="+result.position === 2"
+                                        [class.bg-orange-600]="+result.position === 3"
+                                        [class.text-white]="+result.position === 3"
+                                        [class.bg-gray-800]="+result.position > 3 && +result.position <= 10"
+                                        [class.text-gray-300]="+result.position > 3 && +result.position <= 10"
+                                        [class.bg-red-900]="+result.position > 20"
+                                        [class.text-red-300]="+result.position > 20"> {{ result.position > 20 ? 'DNF' :
+                                        result.position }} </span> </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-1 h-8 rounded-full"
+                                            [style.background-color]="getTeamColor(result.Constructor.constructorId)">
+                                        </div>
+                                        <div>
+                                            <div class="text-sm font-medium text-black dark:text-white">
+                                                {{ result.Driver.givenName }} {{ result.Driver.familyName }}
+                                            </div>
+                                            <div class="text-xs text-gray-400">{{ result.Driver.code }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-700 dark:text-gray-400">
+                                    {{ result.Constructor.name }}
+                                </td>
+                                <td
+                                    class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-700 dark:text-gray-400">
+                                    {{ result.grid }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <span [ngClass]="{
+                                        'text-black dark:text-white': result.status === 'Finished',
+                                        'text-red-400': result.status !== 'Finished'
+                                    }">
+                                        {{ result.Time?.time || result.status }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-bold"
+                                    [class.text-f1-accent]="result.points > '0'"
+                                    [class.text-gray-500]="result.points === '0'">
+                                    {{ result.points }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </app-card>
+        </div>
+
+        <!-- Qualifying Tab -->
+        <div class="grid grid-cols-1 gap-6" *ngIf="activeTab() === 'qualifying'">
+            <app-card title="Qualifying Results" [noPadding]="true">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-200 dark:bg-gray-900">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-900 dark:text-gray-400 uppercase">Pos</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-900 dark:text-gray-400 uppercase">Driver</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-900 dark:text-gray-400 uppercase">Team</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-900 dark:text-gray-400 uppercase">Q1</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-900 dark:text-gray-400 uppercase">Q2</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-900 dark:text-gray-400 uppercase">Q3</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-800">
+                            <tr *ngFor="let result of qualifyingResults()" class="hover:bg-gray-200 dark:hover:bg-gray-900 transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span
+                                        class="inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold"
+                                        [class.bg-yellow-500]="result.position === '1'"
+                                        [class.text-black]="result.position === '1'"
+                                        [class.bg-gray-400]="result.position === '2'"
+                                        [class.text-black]="result.position === '2'"
+                                        [class.bg-orange-600]="result.position === '3'"
+                                        [class.text-white]="result.position === '3'"
+                                        [class.bg-gray-800]="+result.position > 3"
+                                        [class.text-gray-300]="+result.position > 3">
+                                        {{ result.position }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-1 h-8 rounded-full"
+                                            [style.background-color]="getTeamColor(result.Constructor.constructorId)">
+                                        </div>
+                                        <div>
+                                            <div class="text-sm font-medium text-black dark:text-white">
+                                                {{ result.Driver.givenName }} {{ result.Driver.familyName }}
+                                            </div>
+                                            <div class="text-xs text-gray-400">{{ result.Driver.code }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-700 dark:text-gray-400">
+                                    {{ result.Constructor.name }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-400">
+                                    {{ result.Q1 || '-' }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-400">
+                                    {{ result.Q2 || '-' }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
+                                    [class.text-f1-accent]="result.Q3" [class.text-gray-500]="!result.Q3">
+                                    {{ result.Q3 || '-' }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </app-card>
+        </div>
+
+        <!-- Fastest Lap Info -->
+        <div class="grid grid-cols-1 gap-6" *ngIf="fastestLapDriver">
+            <app-card title="Fastest Lap">
+                <div class="bg-gray-100 dark:bg-gray-900 rounded-lg p-6">
+                    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                        <div class="flex items-center gap-4">
+                            <div
+                                class="w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold bg-purple-500 text-black dark:text-white">
+                                {{ fastestLapDriver.Driver.code }}
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold text-black dark:text-white">
+                                    {{ fastestLapDriver.Driver.givenName }} {{ fastestLapDriver.Driver.familyName }}
+                                </h3>
+                                <p class="text-sm text-gray-400">{{ fastestLapDriver.Constructor.name }}</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-6 text-center">
+                            <div>
+                                <div class="text-gray-400 text-xs mb-1">Time</div>
+                                <div class="text-black dark:text-white font-bold">{{
+                                    fastestLapDriver.FastestLap?.Time?.time }}</div>
+                            </div>
+                            <div>
+                                <div class="text-gray-400 text-xs mb-1">Lap</div>
+                                <div class="text-black dark:text-white font-bold">{{ fastestLapDriver.FastestLap?.lap }}
+                                </div>
+                            </div>
+                            <div>
+                                <div class="text-gray-400 text-xs mb-1">Avg Speed</div>
+                                <div class="text-black dark:text-white font-bold">{{
+                                    fastestLapDriver.FastestLap?.AverageSpeed?.speed }}
+                                    km/h</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </app-card>
+        </div>
+
+    </div>
+
+    <!-- Not Found -->
+    <div *ngIf="!loading() && !raceDetails()" class="text-center py-12">
+        <div class="text-6xl mb-4">🏁</div>
+        <h2 class="text-2xl font-bold text-black dark:text-white mb-2">Race Not Found</h2>
+        <p class="text-gray-400 mb-6">The race you're looking for doesn't exist.</p>
+        <button routerLink="/races"
+            class="bg-f1-accent text-black px-6 py-3 rounded-lg font-medium hover:bg-f1-accent/80 transition-colors">
+            Back to Races
+        </button>
+    </div>
+</div>

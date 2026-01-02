@@ -9,6 +9,8 @@ import { MOCK_RACE_RESULTS } from "../data/mock-race-results.data";
 import { MOCK_SPRINT_RESULTS } from "../data/mock-sprint-results.data";
 import { MOCK_TEAM_PERFORMANCE } from "../data/mock-team-performance.data";
 import { MOCK_SPRINT_TEAM_PERFORMANCE } from "../data/mock-sprint-team-performance.data";
+import { MOCK_DETAILED_RACE_RESULTS } from "../data/mock-detailed-race-results.data";
+import { MOCK_DETAILED_QUALIFYING_RESULTS } from "../data/mock-detailed-qualifying-results.data";
 
 
 @Injectable({
@@ -293,6 +295,40 @@ export class F1ApiService {
             sprintPoints: Number(race.sprintResults?.find((s: any) => s.Driver.driverId === r.Driver.driverId)?.points ?? 0),
             position: r.position
         }))
+    }
+
+    getRaceDetails(season: string, round: string): Observable<any> {
+        const year = season || this.getCurrentSeason();
+        if (this.useMockData) {
+            const raceData = MOCK_DETAILED_RACE_RESULTS.find(item => item.season === year && item.round === round);
+            return of(raceData?.Races[0] || null);
+        }
+
+        return this.http.get(`${this.ergastBaseUrl}/${year}/${round}/results.json`)
+            .pipe(
+                map((response: any) => response.MRData.RaceTable.Races[0]),
+                catchError(error => {
+                    console.error('Error fetching race details:', error);
+                    return of([]);
+                })
+            );
+    }
+
+    getQualifyingDetails(season: string, round: string): Observable<any> {
+        const year = season || this.getCurrentSeason();
+        if (this.useMockData) {
+            const raceData = MOCK_DETAILED_QUALIFYING_RESULTS.find(item => item.season === year && item.round === round);
+            return of(raceData?.Races[0].QualifyingResults || []);
+        }
+
+        return this.http.get(`${this.ergastBaseUrl}/${year}/${round}/qualifying.json`)
+            .pipe(
+                map((response: any) => response.MRData.RaceTable.Races[0]?.QualifyingResults || []),
+                catchError(error => {
+                    console.error('Error fetching qualifying results:', error);
+                    return of([]);
+                })
+            );
     }
 
 }

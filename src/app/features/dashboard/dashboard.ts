@@ -6,15 +6,15 @@ import { Loading } from '../../shared/components/loading/loading';
 import { StatCard } from '../../shared/components/stat-card/stat-card';
 import { F1ApiService } from '../../core/services/f1-api.service';
 import { SeasonService } from '../../core/services/season.service';
-import { Drivers } from '../drivers/drivers';
+import { forkJoin, finalize } from 'rxjs';
 
 @Component({
   selector: 'app-dashboard',
   imports: [
-    CommonModule, 
+    CommonModule,
     RouterModule,
-    Card, 
-    Loading, 
+    Card,
+    Loading,
     StatCard
   ],
   templateUrl: './dashboard.html',
@@ -39,26 +39,27 @@ export class Dashboard {
 
   private loadDashboardData(season: string): void {
     this.loading.set(true);
-    
-    Promise.all([
-      this.apiService.getDriverStandings(season).toPromise(),
-      this.apiService.getConstructorStandings(season).toPromise(),
-      this.apiService.getRaceCalendar(season).toPromise()
-    ]).then(([drivers, constructors, races]) => {
-      this.driverStandings.set(drivers);
-      this.constructorStandings.set(constructors);
-      this.raceCalendar.set(races || []);
 
-      // Find next race
-      const now = new Date();
-      const upcoming = (races || []).find((race: any) => new Date(race.date) > now);
-      this.nextRace.set(upcoming);
-
-      this.loading.set(false);
-    }).catch(error => {
-      console.error("Error loading dashboard: ", error);
-      this.loading.set(false);
+    forkJoin({
+      drivers: this.apiService.getDriverStandings(season),
+      constructors: this.apiService.getConstructorStandings(season),
+      races: this.apiService.getRaceCalendar(season)
     })
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: ({ drivers, constructors, races }) => {
+          this.driverStandings.set(drivers);
+          this.constructorStandings.set(constructors);
+          this.raceCalendar.set(races);
+
+          const now = new Date();
+          const upcoming = races.find((race: any) => new Date(race.date) > now);
+          this.nextRace.set(upcoming);
+        },
+        error: error => {
+          console.error('Error loading dashboard:', error);
+        }
+      });
   }
 
   getTopDrivers(count: number = 3): any[] {

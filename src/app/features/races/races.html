@@ -1,7 +1,161 @@
 <div class="max-w-7xl mx-auto">
-  <div class="bg-f1-surface rounded-xl border border-gray-800 p-12 text-center">
-    <div class="text-6xl mb-4">🏆</div>
-    <h2 class="text-3xl font-bold text-white mb-2">Races Page</h2>
-    <p class="text-gray-400">Coming soon</p>
+  <!-- Loading State -->
+  <app-loading *ngIf="loading()"></app-loading>
+
+  <!-- Races Content -->
+  <div *ngIf="!loading()" class="space-y-6">
+
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <h1 class="text-3xl font-bold text-black dark:text-white">Race Calendar</h1>
+        <p class="text-gray-400 mt-1">2024 Season • {{ raceCalendar().length }} Races</p>
+      </div>
+
+      <!-- Filters -->
+      <div class="flex gap-3">
+        <input type="text" placeholder="Search races..." [(ngModel)]="searchTerm"
+          class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-f1-accent transition-colors w-64">
+
+        <select [(ngModel)]="selectedFilter"
+          class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-f1-accent transition-colors">
+          <option value="all">All Races ({{ raceCalendar().length }})</option>
+          <option value="completed">Completed ({{ completedCount() }})</option>
+          <option value="upcoming">Upcoming ({{ upcomingCount() }})</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Next Race Highlight -->
+    <div *ngIf="nextRace() && selectedFilter() !== 'completed'"
+      class="bg-gradient-to-r from-f1-accent/20 to-f1-primary rounded-2xl p-6 border border-f1-accent/30">
+      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <div class="text-f1-accent text-sm font-semibold mb-2">NEXT RACE</div>
+          <h2 class="text-2xl font-bold text-black dark:text-white mb-1">{{ nextRace()?.raceName }}</h2>
+          <p class="text-gray-600 dark:text-gray-300">
+            {{ nextRace()?.Circuit.circuitName }} •
+            {{ nextRace()?.Circuit.Location.locality }}, {{ nextRace()?.Circuit.Location.country }}
+          </p>
+          <p class="text-f1-accent mt-2 font-medium">
+            {{ formatDate(nextRace()?.date) }} • Round {{ nextRace()?.round }}
+          </p>
+        </div>
+        <div class="text-center bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100 rounded-lg p-6">
+          <div class="text-4xl font-bold text-f1-accent">{{ getDaysUntilRace(nextRace()?.date) }}</div>
+          <div class="text-gray-500 dark:text-gray-400 mt-1">days to go</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="bg-f1-surface rounded-lg p-6 border border-gray-800">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-gray-400 text-sm mb-1">Total Races</div>
+            <div class="text-3xl font-bold text-black dark:text-white">{{ raceCalendar().length }}</div>
+          </div>
+          <div class="text-4xl">🏁</div>
+        </div>
+      </div>
+
+      <div class="bg-f1-surface rounded-lg p-6 border border-gray-800">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-gray-400 text-sm mb-1">Completed</div>
+            <div class="text-3xl font-bold text-green-400">{{ completedCount() }}</div>
+          </div>
+          <div class="text-4xl">✓</div>
+        </div>
+      </div>
+
+      <div class="bg-f1-surface rounded-lg p-6 border border-gray-800">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-gray-400 text-sm mb-1">Remaining</div>
+            <div class="text-3xl font-bold text-f1-accent">{{ upcomingCount() }}</div>
+          </div>
+          <div class="text-4xl">📅</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Race Calendar Grid -->
+    <div class="grid grid-cols-1 gap-6">
+      <app-card class="race-card" title="All Races">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div *ngFor="let race of filteredRaces()"
+            class="bg-gray-100 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 transition-all cursor-pointer hover:transform hover:scale-105"
+            [class.border-green-500]="isRaceCompleted(race.date)" [class.border-f1-accent]="!isRaceCompleted(race.date)"
+            [routerLink]="['/races', race.season, race.round]">
+
+            <!-- Status Badge -->
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold px-2 py-1 rounded" [class.bg-green-500/20]="isRaceCompleted(race.date)"
+                [class.text-green-400]="isRaceCompleted(race.date)"
+                [class.bg-f1-accent/20]="!isRaceCompleted(race.date)"
+                [class.text-f1-accent]="!isRaceCompleted(race.date)">
+                {{ isRaceCompleted(race.date) ? 'COMPLETED' : 'UPCOMING' }}
+              </span>
+              <span class="text-xs text-gray-400">Round {{ race.round }}</span>
+            </div>
+
+            <!-- Race Info -->
+            <h3 class="text-lg font-bold text-black dark:text-white mb-2">{{ race.raceName }}</h3>
+
+            <div class="space-y-2 text-sm">
+              <div class="flex items-start gap-2 text-gray-400">
+                <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span class="flex-1">{{ race.Circuit.Location.locality }}, {{ race.Circuit.Location.country }}</span>
+              </div>
+
+              <div class="flex items-center gap-2 text-gray-400">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span>{{ formatDate(race.date) }}</span>
+              </div>
+
+              <div class="text-xs text-gray-500 mt-2">
+                {{ race.Circuit.circuitName }}
+              </div>
+            </div>
+
+            <!-- Days Until (for upcoming) -->
+            <div *ngIf="!isRaceCompleted(race.date)" class="mt-4 pt-4 border-t border-gray-800">
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-gray-400">Time until race</span>
+                <span class="text-sm font-bold text-f1-accent">{{ getDaysUntilRace(race.date) }} days</span>
+              </div>
+            </div>
+
+            <!-- Completed Badge -->
+            <div *ngIf="isRaceCompleted(race.date)" class="mt-4 pt-4 border-t border-gray-800">
+              <div class="flex items-center justify-center gap-2 text-green-400 text-sm">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clip-rule="evenodd" />
+                </svg>
+                <span class="font-medium">View Results</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- No Results -->
+        <div *ngIf="filteredRaces().length === 0" class="text-center py-12">
+          <div class="text-gray-400">No races found</div>
+        </div>
+      </app-card>
+    </div>
+
   </div>
 </div>

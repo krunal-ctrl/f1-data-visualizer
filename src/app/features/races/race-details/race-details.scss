@@ -1,0 +1,11 @@
+:host {
+  display: block;
+}
+
+.podium-card {
+  &:hover {
+    transform: translateY(-4px);
+  }
+  
+  transition: all 0.3s ease;
+}
