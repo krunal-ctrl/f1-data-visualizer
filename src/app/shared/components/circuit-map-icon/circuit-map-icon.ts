@@ -1,17 +1,18 @@
-import { CommonModule } from '@angular/common';
-import { Component, Input, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, Input, signal } from '@angular/core';
+import { ThemeService } from '../../../core/services/theme.service';
 
 @Component({
-  selector: 'app-circuit-map',
-  imports: [CommonModule],
-  templateUrl: './circuit-map.html',
-  styleUrl: './circuit-map.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  selector: 'app-circuit-map-icon',
+  imports: [],
+  templateUrl: './circuit-map-icon.html',
+  styleUrl: './circuit-map-icon.scss',
 })
-export class CircuitMap {
+export class CircuitMapIcon {
   @Input({ required: true }) circuitId!: string;
   @Input({ required: true }) circuitName!: string;
   @Input() height: string = 'aspect-video';
+
+  private themeService = inject(ThemeService);
 
   failed = signal(false);
 
@@ -20,25 +21,26 @@ export class CircuitMap {
       'albert_park': 'Australia',
       'americas': 'USA',
       'bahrain': 'Bahrain',
+      'baku': 'Azerbaijan',
       'catalunya': 'Spain',
       'hungaroring': 'Hungary',
       'interlagos': 'Brazil',
-      'jeddah': 'Saudi_Arabia',
+      'jeddah': 'Saudi Arabia',
       'marina_bay': 'Singapore',
       'monaco': 'Monaco',
       'monza': 'Italy',
       'red_bull_ring': 'Austria',
       'rodriguez': 'Mexico',
-      'silverstone': 'Great_Britain',
+      'silverstone': 'Great Britain',
       'spa': 'Belgium',
       'suzuka': 'Japan',
-      'yas_marina': 'Abu_Dhabi',
+      'yas_marina': 'Abu Dhabi',
       'zandvoort': 'Netherlands',
-      'vegas': 'Las_Vegas',
+      'vegas': 'Las Vegas',
       'miami': 'Miami',
       'losail': 'Qatar',
       'shanghai': 'China',
-      'imola': 'Emilia_Romagna',
+      'imola': 'Emilia Romagna',
       'villeneuve': 'Canada',
       'madring': 'Spain',
     };
@@ -47,7 +49,7 @@ export class CircuitMap {
 
   get imageUrl(): string {
     const normalizedId = this.getNormalizedId(this.circuitId);
-    return `https://media.formula1.com/image/upload/f_auto,q_auto,w_1320/content/dam/fom-website/2018-redesign-assets/Circuit%20maps%2016x9/${normalizedId}_Circuit`
+    return `https://media.formula1.com/image/upload/f_auto,c_limit,q_auto,w_1440/content/dam/fom-website/2018-redesign-assets/Track%20icons%204x3/${normalizedId}${this.themeService.isDarkMode() ? '' : ' carbon'}.png`;
   }
 
   handleError(event: any) {
