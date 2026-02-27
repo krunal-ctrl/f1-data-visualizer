@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ViewChild } from '@angular/core';
+import { Component, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { Header } from '../../shared/components/header/header';
 import { Sidebar } from '../../shared/components/sidebar/sidebar';
@@ -9,6 +9,7 @@ import { Sidebar } from '../../shared/components/sidebar/sidebar';
   imports: [CommonModule, RouterOutlet, Header, Sidebar],
   templateUrl: './main-layout.html',
   styleUrl: './main-layout.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class MainLayout {
   @ViewChild(Sidebar) sidebar!: Sidebar;

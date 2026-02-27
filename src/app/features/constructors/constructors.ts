@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Card } from '../../shared/components/card/card';
@@ -22,6 +22,7 @@ import { ConstructorStanding } from '../../core/models/team.model';
   ],
   templateUrl: './constructors.html',
   styleUrl: './constructors.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Constructors {
   private apiService = inject(F1ApiService);

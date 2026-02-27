@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { LineChart } from '../../../shared/components/line-chart/line-chart';
 import { Loading } from '../../../shared/components/loading/loading';
@@ -22,6 +22,7 @@ import { PerformanceResult } from '../../../core/models/analytics.model';
   ],
   templateUrl: './driver-detail.html',
   styleUrl: './driver-detail.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DriverDetail {
   private apiService = inject(F1ApiService);

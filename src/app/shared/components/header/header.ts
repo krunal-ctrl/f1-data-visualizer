@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, inject, output } from '@angular/core';
+import { Component, computed, inject, output, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ThemeService } from '../../../core/services/theme.service';
 import { SeasonService } from '../../../core/services/season.service';
@@ -9,6 +9,7 @@ import { SeasonService } from '../../../core/services/season.service';
   imports: [CommonModule, FormsModule],
   templateUrl: './header.html',
   styleUrl: './header.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Header {
   private themeService = inject(ThemeService);

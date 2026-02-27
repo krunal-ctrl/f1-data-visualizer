@@ -9,6 +9,7 @@ import { Loading } from '../../shared/components/loading/loading';
 import { PieChart } from '../../shared/components/pie-chart/pie-chart';
 import { F1ApiService } from '../../core/services/f1-api.service';
 import { SeasonService } from '../../core/services/season.service';
+import { AnalyticsService } from '../../core/services/analytics.service';
 import { finalize, forkJoin } from 'rxjs';
 import { DriverStanding } from '../../core/models/driver.model';
 import { ConstructorStanding } from '../../core/models/team.model';
@@ -33,6 +34,7 @@ import { Race } from '../../core/models/race.model';
 export class Analytics {
   private apiService = inject(F1ApiService);
   private seasonService = inject(SeasonService);
+  private analyticsService = inject(AnalyticsService);
 
   driverStandings = signal<DriverStanding[]>([]);
   constructorStandings = signal<ConstructorStanding[]>([]);
@@ -76,79 +78,15 @@ export class Analytics {
 
   // Championship Prediction
   championshipPrediction = computed(() => {
-    const standings = this.driverStandings();
-    if (standings.length === 0) return [];
-
-    const racesRemaining = this.getRacesRemaining();
-    const sprintRacesRemaining = this.getSprintRacesRemaining();
-    // Calculate max points available
-    const maxPointsFromRaces = racesRemaining * 25; // 25 for win + 1 for fastest lap
-    const maxPointsFromSprints = sprintRacesRemaining * 8; // Sprint: 8-7-6-5-4-3-2-1
-    const maxPointsAvailable = maxPointsFromRaces + maxPointsFromSprints;
-
-    const leaderPoints = standings[0].points;
-
-    // Find all drivers who can mathematically win
-    const contenders = standings.filter((driver: DriverStanding) => {
-      const driverPoints = driver.points;
-      const maxPossiblePoints = driverPoints + maxPointsAvailable;
-      return maxPossiblePoints >= leaderPoints;
-    });
-
-    if (contenders.length === 0) return [];
-
-    // Calculate win probability for each contender
-    const predictions = contenders.map((driver: DriverStanding) => {
-      const driverPoints = driver.points;
-      const pointsGap = leaderPoints - driverPoints;
-
-      let winChance: number;
-
-      if (pointsGap === 0) {
-        // Leader or tied - highest base probability
-        winChance = 40 + (15 / contenders.length);
-      } else if (pointsGap >= maxPointsAvailable) {
-        // Mathematically eliminated
-        winChance = 0;
-      } else {
-        // Calculate based on multiple factors
-        const gapPercentage = pointsGap / maxPointsAvailable;
-        const positionPenalty = (driver.position - 1) * 3;
-        const winsBonus = driver.wins * 2;
-
-        // Base probability inversely proportional to gap
-        const baseProbability = (1 - gapPercentage) * 50;
-
-        // Apply modifiers
-        winChance = Math.max(1, baseProbability - positionPenalty + winsBonus);
-      }
-
-      return {
-        driver,
-        points: driverPoints,
-        winChance
-      };
-    });
-
-    // Normalize probabilities to sum to 100%
-    const totalChance = predictions.reduce((sum: number, p: any) => sum + p.winChance, 0);
-
-    return predictions.map((p: any) => ({
-      name: `${p.driver.driver.givenName} ${p.driver.driver.familyName}`,
-      value: parseFloat((p.winChance / totalChance * 100).toFixed(1)),
-      extra: {
-        position: p.driver.position,
-        points: p.points,
-        wins: p.driver.wins,
-        pointsGap: leaderPoints - p.points
-      }
-    })).filter((p: any) => p.value >= 0.5); // Only show drivers with at least 0.5% chance
+    return this.analyticsService.calculateChampionshipPrediction(
+      this.driverStandings(),
+      this.raceCalendar()
+    );
   });
 
   // Points Distribution (Top 5)
   pointsDistribution = computed(() => {
-    const standings = this.driverStandings();
-    return standings.slice(0, 5).map((s: DriverStanding) => ({
+    return this.driverStandings().slice(0, 5).map((s: DriverStanding) => ({
       name: s.driver.familyName,
       value: s.points
     }));
@@ -156,8 +94,7 @@ export class Analytics {
 
   // Wins Distribution
   winsDistribution = computed(() => {
-    const standings = this.driverStandings();
-    return standings
+    return this.driverStandings()
       .filter((s: DriverStanding) => s.wins > 0)
       .map((s: DriverStanding) => ({
         name: s.driver.familyName,
@@ -167,8 +104,7 @@ export class Analytics {
 
   // Team Performance Matrix
   teamPerformanceData = computed(() => {
-    const standings = this.constructorStandings();
-    return standings.map((s: ConstructorStanding) => ({
+    return this.constructorStandings().map((s: ConstructorStanding) => ({
       name: s.constructor.name,
       value: s.points
     }));
@@ -181,7 +117,7 @@ export class Analytics {
 
     return standings.map((driver: DriverStanding) => {
       const totalPoints = driver.points;
-      const avgPerRace = totalPoints / races;
+      const avgPerRace = totalPoints / (races || 1);
 
       return {
         name: driver.driver.familyName,
@@ -208,9 +144,10 @@ export class Analytics {
     );
 
     // Consistency: points per race
+    const raceCount = this.raceCalendar().length || 1;
     const withConsistency = standings.map((s: DriverStanding) => ({
       ...s,
-      consistency: s.points / this.raceCalendar().length
+      consistency: s.points / raceCount
     }));
     const mostConsistent = withConsistency.reduce((prev: any, curr: any) =>
       curr.consistency > prev.consistency ? curr : prev
@@ -227,20 +164,22 @@ export class Analytics {
 
     if (!driver1 || !driver2) return null;
 
+    const raceCount = this.raceCalendar().length || 1;
+
     return {
       driver1: {
         name: `${driver1.driver.givenName} ${driver1.driver.familyName}`,
         points: driver1.points,
         wins: driver1.wins,
         position: driver1.position,
-        avgPointsPerRace: (driver1.points / this.raceCalendar().length).toFixed(1)
+        avgPointsPerRace: (driver1.points / raceCount).toFixed(1)
       },
       driver2: {
         name: `${driver2.driver.givenName} ${driver2.driver.familyName}`,
         points: driver2.points,
         wins: driver2.wins,
         position: driver2.position,
-        avgPointsPerRace: (driver2.points / this.raceCalendar().length).toFixed(1)
+        avgPointsPerRace: (driver2.points / raceCount).toFixed(1)
       }
     };
   });
@@ -280,12 +219,5 @@ export class Analytics {
   getCompletedRaces(): number {
     const now = new Date();
     return this.raceCalendar().filter(race => new Date(race.date) <= now).length;
-  }
-
-  // Helper method to count sprint races in remaining calendar
-  getSprintRacesRemaining(): number {
-    const now = new Date();
-    const remainingRaces = this.raceCalendar().filter(race => new Date(race.date) > now);
-    return remainingRaces.filter(race => race.sprint?.date).length;
   }
 }

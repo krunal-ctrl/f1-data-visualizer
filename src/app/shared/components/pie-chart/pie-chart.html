@@ -1,4 +1,4 @@
-<div class="chart-container" [style.height.px]="height">
+<div class="chart-container" [style.height.px]="height" role="img" [attr.aria-label]="'Pie chart showing ' + legendTitle">
   <ngx-charts-pie-chart
     [results]="data"
     [legend]="showLegend"

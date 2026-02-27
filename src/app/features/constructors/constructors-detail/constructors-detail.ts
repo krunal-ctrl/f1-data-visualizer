@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { Card } from '../../../shared/components/card/card';
 import { Loading } from '../../../shared/components/loading/loading';
@@ -21,6 +21,7 @@ import { ConstructorPerformance } from '../../../core/models/analytics.model';
   ],
   templateUrl: './constructors-detail.html',
   styleUrl: './constructors-detail.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ConstructorsDetail {
   private apiService = inject(F1ApiService);

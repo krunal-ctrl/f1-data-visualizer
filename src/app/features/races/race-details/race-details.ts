@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { Card } from '../../../shared/components/card/card';
 import { Loading } from '../../../shared/components/loading/loading';
@@ -18,6 +18,7 @@ import { Race, RaceResult, QualifyingResult } from '../../../core/models/race.mo
   ],
   templateUrl: './race-details.html',
   styleUrl: './race-details.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RaceDetails implements OnInit {
   private apiService = inject(F1ApiService);

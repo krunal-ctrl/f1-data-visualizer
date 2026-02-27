@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Card } from '../../shared/components/card/card';
@@ -19,6 +19,7 @@ import { Race } from '../../core/models/race.model';
   ],
   templateUrl: './races.html',
   styleUrl: './races.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Races {
   private apiService = inject(F1ApiService);

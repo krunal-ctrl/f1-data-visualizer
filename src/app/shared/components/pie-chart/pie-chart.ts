@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ContentChild, ElementRef, Input, TemplateRef, ViewChild } from '@angular/core';
+import { Component, ContentChild, ElementRef, Input, TemplateRef, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { BaseChartComponent, Color, NgxChartsModule, ScaleType } from '@swimlane/ngx-charts';
 
 @Component({
@@ -7,6 +7,7 @@ import { BaseChartComponent, Color, NgxChartsModule, ScaleType } from '@swimlane
   imports: [CommonModule, NgxChartsModule],
   templateUrl: './pie-chart.html',
   styleUrl: './pie-chart.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PieChart {
   @Input() data: any[] = [];

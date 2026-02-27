@@ -1,4 +1,4 @@
-import { Component, Input, TemplateRef } from '@angular/core';
+import { Component, Input, TemplateRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgxChartsModule, Color, ScaleType } from '@swimlane/ngx-charts';
 
@@ -7,6 +7,7 @@ import { NgxChartsModule, Color, ScaleType } from '@swimlane/ngx-charts';
   imports: [CommonModule, NgxChartsModule],
   templateUrl: './bar-chart.html',
   styleUrl: './bar-chart.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BarChart {
   @Input() data: any[] = [];

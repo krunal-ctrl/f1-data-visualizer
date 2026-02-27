@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, TemplateRef } from '@angular/core';
+import { Component, Input, TemplateRef, ChangeDetectionStrategy } from '@angular/core';
 import { Color, NgxChartsModule, ScaleType } from '@swimlane/ngx-charts';
 
 @Component({
@@ -7,6 +7,7 @@ import { Color, NgxChartsModule, ScaleType } from '@swimlane/ngx-charts';
   imports: [CommonModule, NgxChartsModule],
   templateUrl: './area-chart.html',
   styleUrl: './area-chart.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AreaChart {
   @Input() data: any[] = [];

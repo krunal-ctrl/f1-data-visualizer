@@ -1,4 +1,4 @@
-<div class="chart-container" [style.height.px]="height">
+<div class="chart-container" [style.height.px]="height" role="img" [attr.aria-label]="'Line chart showing ' + yAxisLabel + ' over ' + xAxisLabel">
   <ngx-charts-line-chart
     [results]="data"
     [xAxis]="showXAxis"

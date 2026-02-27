@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, effect, inject, signal } from '@angular/core';
+import { Component, effect, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { BarChart } from '../../shared/components/bar-chart/bar-chart';
@@ -22,6 +22,7 @@ import { DriverStanding } from '../../core/models/driver.model';
   ],
   templateUrl: './drivers.html',
   styleUrl: './drivers.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Drivers {
   private apiService = inject(F1ApiService);

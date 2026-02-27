@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, TemplateRef } from '@angular/core';
+import { Component, Input, TemplateRef, ChangeDetectionStrategy } from '@angular/core';
 import { NgxChartsModule, Color, ScaleType } from '@swimlane/ngx-charts';
 
 @Component({
@@ -7,6 +7,7 @@ import { NgxChartsModule, Color, ScaleType } from '@swimlane/ngx-charts';
   imports: [CommonModule, NgxChartsModule],
   templateUrl: './line-chart.html',
   styleUrl: './line-chart.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class LineChart {
   @Input() data: any[] = [];
