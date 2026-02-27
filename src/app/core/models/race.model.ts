@@ -1,6 +1,11 @@
 import { Driver } from "./driver.model";
 import { Constructor } from "./team.model";
 
+export interface Session {
+  date: string;
+  time?: string;
+}
+
 export interface Race {
   season: string;
   round: string;
@@ -10,10 +15,11 @@ export interface Race {
   circuit: Circuit;
   results?: RaceResult[];
   qualifyingResults?: QualifyingResult[];
-  sprint?: {
-    date: string;
-    time?: string;
-  };
+  firstPractice?: Session;
+  secondPractice?: Session;
+  thirdPractice?: Session;
+  qualifying?: Session;
+  sprint?: Session;
   url?: string;
 }
 

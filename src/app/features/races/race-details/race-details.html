@@ -23,51 +23,90 @@
 
       <!-- Race Header -->
       <div
-        class="bg-gradient-to-r from-f1-primary to-f1-surface rounded-2xl p-8 border border-gray-300 dark:border-gray-800"
+        class="bg-gradient-to-r from-f1-primary to-f1-surface rounded-2xl p-8 border border-gray-300 dark:border-gray-800 relative overflow-hidden"
       >
-        <div class="mb-4">
-          <div class="text-f1-accent text-sm font-semibold mb-2">
-            ROUND {{ details.round }} • {{ details.season }}
+        <div class="flex flex-col lg:flex-row gap-8 relative z-10">
+          <!-- Left: Race Info -->
+          <div class="flex-1">
+            <div class="text-f1-accent text-sm font-bold mb-2 tracking-wider">
+              ROUND {{ details.round }} • {{ details.season }}
+            </div>
+            <h1 class="text-4xl md:text-5xl font-bold text-black dark:text-white mb-4">
+              {{ details.raceName }}
+            </h1>
+            
+            <div class="flex flex-wrap items-center gap-6 text-gray-600 dark:text-gray-300">
+              <div class="flex items-center gap-2">
+                @if (getFlagUrl(details.circuit.location.country)) {
+                  <img [src]="getFlagUrl(details.circuit.location.country)" [alt]="details.circuit.location.country" class="w-6 h-auto shadow-sm">
+                }
+                <span class="text-lg">{{ details.circuit.location.locality }}, {{ details.circuit.location.country }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-2xl">📅</span>
+                <span class="text-lg">{{ formatDate(details.date) }}</span>
+              </div>
+            </div>
+
+            <p class="text-gray-400 mt-4 font-medium flex items-center gap-2">
+              <span class="text-xl">📍</span> {{ details.circuit.circuitName }}
+            </p>
+
+            <!-- Weather Widget -->
+            @if (sessionWeather(); as sw) {
+              <div class="mt-8 flex gap-4 flex-nowrap overflow-x-auto py-1">
+                @for (session of ['FP1', 'FP2', 'FP3', 'Qualifying', 'Sprint', 'Race']; track session) {
+                  @if (sw[session]) {
+                    <div class="flex flex-col items-center bg-white/10 dark:bg-black/20 backdrop-blur-md p-3 rounded-xl border border-gray-800 w-36 flex-shrink-0">
+                      <span class="text-[10px] font-bold text-f1-accent uppercase mb-1 truncate w-full text-center">{{ session }}</span>
+                        <div class="text-2xl mb-1">{{ sw[session]?.icon }}</div>
+                        <div class="text-sm font-bold text-black dark:text-white">{{ sw[session]?.temperature }}°C</div>
+                        <div class="text-xs text-gray-400 dark:text-gray-300 mt-1 flex items-center gap-2">
+                          <!-- <span class="text-sm"><img src="assets/images/compass.png" alt="wind" class="h-4"></span> -->
+                          <span class="font-medium">{{ sw[session]?.windSpeed }} km/h</span>
+                        </div>
+                        <div class="text-[9px] text-gray-500 dark:text-gray-400 text-center leading-tight mt-1 truncate w-full px-1">
+                          {{ sw[session]?.condition }}
+                        </div>
+                    </div>
+                  }
+                }
+              </div>
+            }
           </div>
-          <h1 class="text-4xl font-bold text-black dark:text-white mb-2">
-            {{ details.raceName }}
-          </h1>
-          <p class="text-gray-600 dark:text-gray-300 text-lg">
-            {{ details.circuit.circuitName }}
-          </p>
-          <p class="text-gray-400 mt-1">
-            {{ details.circuit.location.locality }}, {{ details.circuit.location.country }}
-          </p>
+
+          <!-- Right: Circuit Map -->
+          <div class="w-full lg:w-80">
+            <app-circuit-map [circuitId]="details.circuit.circuitId" [circuitName]="details.circuit.circuitName" height="h-48 md:h-64 lg:h-48">
+            </app-circuit-map>
+          </div>
         </div>
 
-        <!-- Quick Stats -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-          <div
-            class="bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4"
-          >
-            <div class="text-gray-400 text-xs mb-1">Winner</div>
-            <div class="text-black dark:text-white font-bold">{{ winner?.driver?.familyName }}</div>
-          </div>
-          <div
-            class="bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4"
-          >
-            <div class="text-gray-400 text-xs mb-1">Fastest Lap</div>
-            <div class="text-black dark:text-white font-bold">
-              {{ fastestLapDriver?.driver?.familyName || 'N/A' }}
-            </div>
-          </div>
-          <div
-            class="bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4"
-          >
-            <div class="text-gray-400 text-xs mb-1">Total Laps</div>
-            <div class="text-black dark:text-white font-bold">{{ winner?.laps || 'N/A' }}</div>
-          </div>
-          <div
-            class="bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4"
-          >
-            <div class="text-gray-400 text-xs mb-1">DNFs</div>
-            <div class="text-black dark:text-white font-bold">{{ dnfCount }}</div>
-          </div>
+        <!-- decorative -->
+        <div class="absolute -right-10 -bottom-10 text-[200px] opacity-5 pointer-events-none">🏁</div>
+      </div>
+
+      <!-- Quick Stats -->
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div class="bg-f1-surface border border-gray-800 rounded-xl p-4">
+          <div class="text-gray-500 text-xs uppercase font-bold mb-1">Winner</div>
+          <div class="text-xl font-bold text-black dark:text-white">{{ winner?.driver?.familyName || 'TBD' }}</div>
+        </div>
+        <div class="bg-f1-surface border border-gray-800 rounded-xl p-4">
+          <div class="text-gray-500 text-xs uppercase font-bold mb-1">Fastest Lap</div>
+          <div class="text-xl font-bold text-black dark:text-white">{{ fastestLapDriver?.driver?.familyName || 'N/A' }}</div>
+        </div>
+        <div class="bg-f1-surface border border-gray-800 rounded-xl p-4 border-l-4 border-l-f1-accent">
+          <div class="text-f1-accent text-xs uppercase font-bold mb-1">Season Leader</div>
+          <div class="text-xl font-bold text-black dark:text-white">{{ championshipLeader()?.driver?.familyName || 'N/A' }}</div>
+        </div>
+        <div class="bg-f1-surface border border-gray-800 rounded-xl p-4">
+          <div class="text-gray-500 text-xs uppercase font-bold mb-1">Total Laps</div>
+          <div class="text-xl font-bold text-black dark:text-white">{{ winner?.laps || 'N/A' }}</div>
+        </div>
+        <div class="bg-f1-surface border border-gray-800 rounded-xl p-4">
+          <div class="text-gray-500 text-xs uppercase font-bold mb-1">DNFs</div>
+          <div class="text-xl font-bold text-red-500">{{ dnfCount }}</div>
         </div>
       </div>
 
@@ -292,8 +331,7 @@
                     </th>
                     <th
                       class="px-6 py-3 text-right text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider"
-                    >
-                      Q2
+                    >                      Q2
                     </th>
                     <th
                       class="px-6 py-3 text-right text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider"
@@ -401,7 +439,7 @@
                   <!-- <div>
                     <div class="text-gray-400 text-xs mb-1">Avg Speed</div>
                     <div class="text-black dark:text-white font-bold">
-                      {{ fl.fastestLap?.averageSpeed?.speed }} km/h
+                      {{ fl.fastestLap?.averageSpeed?.speed }} {{ fl.fastestLap?.averageSpeed?.units }}
                     </div>
                   </div> -->
                 </div>
@@ -419,7 +457,7 @@
       <p class="text-gray-400 mb-6">The race you're looking for doesn't exist.</p>
       <button
         routerLink="/races"
-        class="bg-f1-accent text-black px-6 py-3 rounded-lg font-medium hover:bg-f1-accent/80 transition-colors"
+        class="bg-f1-accent text-black px-6 py-3 rounded-lg font-medium hover:bg-f1-accent/80 transition-colors dark:text-white"
       >
         Back to Races
       </button>

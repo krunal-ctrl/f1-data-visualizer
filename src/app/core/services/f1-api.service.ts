@@ -77,6 +77,10 @@ export class F1ApiService {
             circuit: this.mapCircuit(r.Circuit),
             results: r.Results ? r.Results.map((res: any) => this.mapRaceResult(res)) : undefined,
             qualifyingResults: r.QualifyingResults ? r.QualifyingResults.map((res: any) => this.mapQualifyingResult(res)) : undefined,
+            firstPractice: r.FirstPractice ? { date: r.FirstPractice.date, time: r.FirstPractice.time } : undefined,
+            secondPractice: r.SecondPractice ? { date: r.SecondPractice.date, time: r.SecondPractice.time } : undefined,
+            thirdPractice: r.ThirdPractice ? { date: r.ThirdPractice.date, time: r.ThirdPractice.time } : undefined,
+            qualifying: r.Qualifying ? { date: r.Qualifying.date, time: r.Qualifying.time } : undefined,
             sprint: r.Sprint ? { date: r.Sprint.date, time: r.Sprint.time } : undefined
         };
     }
@@ -204,24 +208,6 @@ export class F1ApiService {
             );
     }
 
-    // Race Results
-    getRaceResults(season: string, round: string): Observable<Race | null> {
-        if (this.useMockData) {
-            return of(null);
-        }
-
-        return this.http.get<ErgastResponse<any>>(`${this.ergastBaseUrl}/${season}/${round}/results.json`)
-            .pipe(
-                map(response => {
-                    const race = response.MRData.RaceTable?.Races[0];
-                    return race ? this.mapRace(race) : null;
-                }),
-                catchError(error => {
-                    console.error('Error fetching race results:', error);
-                    return of(null);
-                })
-            );
-    }
 
     // Driver Details
     getDriverDetails(driverId: string): Observable<Driver | null> {
@@ -237,6 +223,27 @@ export class F1ApiService {
                 }),
                 catchError(error => {
                     console.error('Error fetching driver details:', error);
+                    return of(null);
+                })
+            );
+    }
+
+    getRaceDetails(season: string, round: string): Observable<Race | null> {
+        const year = season || this.getCurrentSeason();
+        if (this.useMockData) {
+            const mockData = MOCK_RACE_CALENDAR.find(item => item.season === year);
+            const race = mockData?.Races.find((r: any) => r.round === round);
+            return of(race ? this.mapRace(race) : null);
+        }
+
+        return this.http.get<ErgastResponse<any>>(`${this.ergastBaseUrl}/${year}/${round}.json`)
+            .pipe(
+                map(response => {
+                    const race = response.MRData.RaceTable?.Races[0];
+                    return race ? this.mapRace(race) : null;
+                }),
+                catchError(error => {
+                    console.error('Error fetching race details:', error);
                     return of(null);
                 })
             );
@@ -421,7 +428,7 @@ export class F1ApiService {
         }));
     }
 
-    getRaceDetails(season: string, round: string): Observable<Race | null> {
+    getRaceResultDetails(season: string, round: string): Observable<Race | null> {
         const year = season || this.getCurrentSeason();
         if (this.useMockData) {
             const raceData = MOCK_DETAILED_RACE_RESULTS.find(item => item.season === year && item.round === round);

@@ -107,7 +107,7 @@
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             @for (race of filteredRaces(); track race.round) {
               <div
-                class="bg-gray-100 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 transition-all cursor-pointer hover:transform hover:scale-105"
+                class="bg-gray-100 dark:bg-gray-900 rounded-lg p-4 border border-gray-100 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 transition-all cursor-pointer hover:transform hover:scale-105"
                 [class.border-green-500]="isRaceCompleted(race.date)"
                 [class.border-f1-accent]="!isRaceCompleted(race.date)"
                 [routerLink]="['/races', race.season, race.round]"

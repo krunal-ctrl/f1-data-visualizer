@@ -4,9 +4,14 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 import { Card } from '../../../shared/components/card/card';
 import { Loading } from '../../../shared/components/loading/loading';
 import { F1ApiService } from '../../../core/services/f1-api.service';
-import { forkJoin, finalize } from 'rxjs';
+import { WeatherService } from '../../../core/services/weather.service';
+import { forkJoin, finalize, of, switchMap, Observable, tap } from 'rxjs';
 import { getTeamPrimaryColor } from '../../../shared/utils/team-colors.util';
+import { getCountryCode } from '../../../shared/utils/country-codes.util';
 import { Race, RaceResult, QualifyingResult } from '../../../core/models/race.model';
+import { WeatherData } from '../../../core/models/weather.model';
+import { DriverStanding } from '../../../core/models/driver.model';
+import { CircuitMap } from '../../../shared/components/circuit-map/circuit-map';
 
 @Component({
   selector: 'app-race-details',
@@ -14,7 +19,8 @@ import { Race, RaceResult, QualifyingResult } from '../../../core/models/race.mo
     CommonModule,
     RouterModule,
     Card,
-    Loading
+    Loading,
+    CircuitMap
   ],
   templateUrl: './race-details.html',
   styleUrl: './race-details.scss',
@@ -22,12 +28,16 @@ import { Race, RaceResult, QualifyingResult } from '../../../core/models/race.mo
 })
 export class RaceDetails implements OnInit {
   private apiService = inject(F1ApiService);
+  private weatherService = inject(WeatherService);
   private route = inject(ActivatedRoute);
 
   season = signal<string>('');
   round = signal<string>('');
   raceDetails = signal<Race | null>(null);
   qualifyingResults = signal<QualifyingResult[]>([]);
+  weather = signal<WeatherData | null>(null);
+  sessionWeather = signal<{ [key: string]: WeatherData | null }>({});
+  championshipLeader = signal<DriverStanding | null>(null);
   loading = signal(true);
   activeTab = signal<'results' | 'qualifying'>('results');
 
@@ -43,23 +53,78 @@ export class RaceDetails implements OnInit {
     this.loading.set(true);
 
     forkJoin({
-      raceData: this.apiService.getRaceDetails(this.season(), this.round()),
-      qualifyingData: this.apiService.getQualifyingDetails(this.season(), this.round())
+      raceInfo: this.apiService.getRaceDetails(this.season(), this.round()),
+      raceResults: this.apiService.getRaceResultDetails(this.season(), this.round()),
+      qualifyingData: this.apiService.getQualifyingDetails(this.season(), this.round()),
+      standings: this.apiService.getDriverStandings(this.season())
     })
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: ({ raceData, qualifyingData }) => {
-          this.raceDetails.set(raceData);
+        next: ({ raceInfo, raceResults, qualifyingData, standings }) => {
+          // Merge results into raceInfo if they exist
+          const mergedDetails = raceInfo ? {
+            ...raceInfo,
+            results: raceResults?.results || raceInfo.results
+          } : raceResults;
+
+          this.raceDetails.set(mergedDetails);
           this.qualifyingResults.set(qualifyingData);
+          this.championshipLeader.set(standings[0] || null);
+          
+          if (mergedDetails?.circuit?.location) {
+            this.buildWeatherRequests(mergedDetails);
+          }
         },
         error: err => {
-          console.error('Error loading race data:', err);
+          console.error('Error loading race details:', err);
         }
       });
   }
 
+  private buildWeatherRequests(raceData: any): void {
+    if (!raceData?.circuit?.location) return;
+
+    const sessions: { [key: string]: any } = {
+      'FP1': raceData.firstPractice,
+      'FP2': raceData.secondPractice,
+      'FP3': raceData.thirdPractice,
+      'Qualifying': raceData.qualifying,
+      'Sprint': raceData.sprint,
+      'Race': { date: raceData.date, time: raceData.time }
+    };
+
+    // Filter out sessions with no date
+    const validSessions = Object.fromEntries(
+      Object.entries(sessions).filter(([, s]) => s?.date)
+    );
+
+    this.weatherService.getWeatherForSessions(
+      raceData.circuit.location.lat,
+      raceData.circuit.location.long,
+      validSessions,
+    ).subscribe({
+      next: sessionWeather => this.sessionWeather.set(sessionWeather),
+      error: err => console.error('Error fetching session weather:', err)
+    });
+  }
+
   getTeamColor(constructorId: string): string {
     return getTeamPrimaryColor(constructorId);
+  }
+
+  getFlagUrl(country: string): string {
+    const code = getCountryCode(country);
+    if (!code) return '';
+    return `https://flagcdn.com/w40/${code}.png`;
+  }
+
+  formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'long', 
+      day: 'numeric',
+      year: 'numeric'
+    });
   }
 
   formatTime(time: string): string {
