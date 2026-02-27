@@ -29,7 +29,7 @@
           <app-card [title]="race.circuit.circuitName">
             <div class="space-y-4">
               <!-- Circuit Illustration -->
-              <app-circuit-map
+              <app-circuit-map-icon
                 [circuitId]="race.circuit.circuitId"
                 [circuitName]="race.circuit.circuitName"
               >
@@ -51,7 +51,7 @@
                   }
                   {{ race.circuit.location.locality }}
                 </div>
-              </app-circuit-map>
+              </app-circuit-map-icon>
 
               <div class="space-y-2">
                 <div class="flex justify-between items-center text-sm">
@@ -99,13 +99,13 @@
                 <a
                   [href]="getGoogleMapsUrl(race.circuit.location.lat, race.circuit.location.long)"
                   target="_blank"
-                  class="flex-1 bg-f1-accent text-black text-center py-2 rounded-lg text-[12px] font-medium hover:bg-f1-accent/80 transition-colors"
+                  class="flex-1 bg-f1-surface border border-gray-300 dark:border-gray-700 text-black dark:text-white text-center py-2 rounded-lg text-[12px] font-medium hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 >
-                  Map
+                  View Map
                 </a>
                 <a
                   [routerLink]="['/races', race.season, race.round]"
-                  class="flex-1 bg-black text-white text-center py-2 rounded-lg text-[12px] font-medium hover:bg-gray-800 transition-colors"
+                  class="flex-1 bg-black text-white dark:text-black dark:border-gray-300 dark:bg-gray-100 text-center py-2 rounded-lg text-[12px] font-medium hover:bg-gray-800 transition-colors"
                 >
                   Results
                 </a>

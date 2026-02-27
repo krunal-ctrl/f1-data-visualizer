@@ -11,11 +11,11 @@ import { selectRaceCalendar, selectF1Loading } from '../../core/store/f1.selecto
 import { toSignal, toObservable } from '@angular/core/rxjs-interop';
 import { switchMap, map } from 'rxjs';
 import { getCountryCode } from '../../shared/utils/country-codes.util';
-import { CircuitMap } from '../../shared/components/circuit-map/circuit-map';
+import { CircuitMapIcon } from '../../shared/components/circuit-map-icon/circuit-map-icon';
 
 @Component({
   selector: 'app-circuits',
-  imports: [CommonModule, FormsModule, RouterModule, Card, Loading, CircuitMap],
+  imports: [CommonModule, FormsModule, RouterModule, Card, Loading, CircuitMapIcon],
   templateUrl: './circuits.html',
   styleUrl: './circuits.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
