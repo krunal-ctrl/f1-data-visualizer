@@ -460,4 +460,18 @@ export class F1ApiService {
                 })
             );
     }
+
+    // Circuits
+    getCircuits(season?: string): Observable<Circuit[]> {
+        const year = season || this.getCurrentSeason();
+        // For circuits, Ergast has /{year}/circuits.json
+        return this.http.get<ErgastResponse<any>>(`${this.ergastBaseUrl}/${year}/circuits.json`)
+            .pipe(
+                map(response => response.MRData.CircuitTable?.Circuits.map(c => this.mapCircuit(c)) || []),
+                catchError(error => {
+                    console.error('Error fetching circuits:', error);
+                    return of([]);
+                })
+            );
+    }
 }

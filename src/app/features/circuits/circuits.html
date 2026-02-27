@@ -1,7 +1,124 @@
 <div class="max-w-7xl mx-auto">
-  <div class="bg-f1-surface rounded-xl border border-gray-800 p-12 text-center">
-    <div class="text-6xl mb-4">🗺️</div>
-    <h2 class="text-3xl font-bold text-black dark:text-white mb-2">Circuits Page</h2>
-    <p class="text-gray-400">Coming soon</p>
-  </div>
+  <!-- Loading State -->
+  @if (loading()) {
+    <app-loading></app-loading>
+  } @else {
+    <div class="space-y-6">
+      <!-- Header -->
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 class="text-3xl font-bold text-black dark:text-white">Circuits</h1>
+          <p class="text-gray-400 mt-1">Race tracks for the current season</p>
+        </div>
+
+        <!-- Search -->
+        <div class="flex gap-3">
+          <input
+            type="text"
+            placeholder="Search circuits..."
+            [ngModel]="searchTerm()"
+            (ngModelChange)="searchTerm.set($event)"
+            class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 focus:outline-none focus:border-f1-accent transition-colors w-64 placeholder-gray-500 dark:placeholder-gray-400"
+          />
+        </div>
+      </div>
+
+      <!-- Circuits Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        @for (race of filteredRaces(); track race.round) {
+          <app-card [title]="race.circuit.circuitName">
+            <div class="space-y-4">
+              <!-- Circuit Illustration -->
+              <app-circuit-map
+                [circuitId]="race.circuit.circuitId"
+                [circuitName]="race.circuit.circuitName"
+              >
+                <div
+                  class="absolute top-2 right-2 bg-f1-accent text-black text-[10px] font-bold px-2 py-1 rounded shadow-lg"
+                >
+                  ROUND {{ race.round }}
+                </div>
+
+                <div
+                  class="absolute bottom-2 left-2 flex items-center gap-2 bg-black/60 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded"
+                >
+                  @if (getFlagUrl(race.circuit.location.country)) {
+                    <img
+                      [src]="getFlagUrl(race.circuit.location.country)"
+                      [alt]="race.circuit.location.country"
+                      class="w-4 h-auto rounded-sm"
+                    />
+                  }
+                  {{ race.circuit.location.locality }}
+                </div>
+              </app-circuit-map>
+
+              <div class="space-y-2">
+                <div class="flex justify-between items-center text-sm">
+                  <span class="text-gray-400">Grand Prix</span>
+                  <span class="text-black dark:text-white font-bold text-right">{{
+                    race.raceName
+                  }}</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                  <span class="text-gray-400">Race Date</span>
+                  <span
+                    class="text-black dark:text-white font-medium"
+                    [class.text-f1-accent]="isUpcoming(race.date)"
+                  >
+                    {{ formatDate(race.date) }}
+                  </span>
+                </div>
+                <div
+                  class="flex justify-between items-center text-sm pt-2 border-t border-gray-100 dark:border-gray-800"
+                >
+                  <span class="text-gray-400">Country</span>
+                  <div class="flex items-center gap-2">
+                    @if (getFlagUrl(race.circuit.location.country)) {
+                      <img
+                        [src]="getFlagUrl(race.circuit.location.country)"
+                        [alt]="race.circuit.location.country"
+                        class="w-5 h-auto shadow-sm"
+                      />
+                    }
+                    <span class="text-black dark:text-white font-medium">{{
+                      race.circuit.location.country
+                    }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="pt-4 flex gap-2">
+                <a
+                  [href]="race.circuit.url"
+                  target="_blank"
+                  class="flex-1 bg-f1-surface border border-gray-300 dark:border-gray-700 text-black dark:text-white text-center py-2 rounded-lg text-[12px] font-medium hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                >
+                  Wiki
+                </a>
+                <a
+                  [href]="getGoogleMapsUrl(race.circuit.location.lat, race.circuit.location.long)"
+                  target="_blank"
+                  class="flex-1 bg-f1-accent text-black text-center py-2 rounded-lg text-[12px] font-medium hover:bg-f1-accent/80 transition-colors"
+                >
+                  Map
+                </a>
+                <a
+                  [routerLink]="['/races', race.season, race.round]"
+                  class="flex-1 bg-black text-white text-center py-2 rounded-lg text-[12px] font-medium hover:bg-gray-800 transition-colors"
+                >
+                  Results
+                </a>
+              </div>
+            </div>
+          </app-card>
+        } @empty {
+          <div class="col-span-full py-12 text-center">
+            <div class="text-6xl mb-4">🗺️</div>
+            <p class="text-gray-400">No circuits found matching your search.</p>
+          </div>
+        }
+      </div>
+    </div>
+  }
 </div>

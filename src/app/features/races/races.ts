@@ -11,6 +11,8 @@ import { F1Actions } from '../../core/store/f1.actions';
 import { selectRaceCalendar, selectF1Loading } from '../../core/store/f1.selectors';
 import { toSignal, toObservable } from '@angular/core/rxjs-interop';
 import { switchMap, map } from 'rxjs';
+import { getCountryCode } from '../../shared/utils/country-codes.util';
+import { CircuitMap } from '../../shared/components/circuit-map/circuit-map';
 
 @Component({
   selector: 'app-races',
@@ -19,7 +21,8 @@ import { switchMap, map } from 'rxjs';
     RouterModule,
     FormsModule,
     Card,
-    Loading
+    Loading,
+    CircuitMap
   ],
   templateUrl: './races.html',
   styleUrl: './races.scss',
@@ -107,5 +110,11 @@ export class Races {
       day: 'numeric',
       year: 'numeric'
     });
+  }
+
+  getFlagUrl(country: string): string {
+    const code = getCountryCode(country);
+    if (!code) return '';
+    return `https://flagcdn.com/w40/${code}.png`;
   }
 }

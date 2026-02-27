@@ -2,12 +2,13 @@ import { createReducer, on } from '@ngrx/store';
 import { F1Actions } from './f1.actions';
 import { DriverStanding } from '../models/driver.model';
 import { ConstructorStanding } from '../models/team.model';
-import { Race } from '../models/race.model';
+import { Race, Circuit } from '../models/race.model';
 
 export interface F1State {
   driverStandings: { [season: string]: DriverStanding[] };
   constructorStandings: { [season: string]: ConstructorStanding[] };
   raceCalendar: { [season: string]: Race[] };
+  circuits: { [season: string]: Circuit[] };
   loading: boolean;
   error: string | null;
 }
@@ -16,6 +17,7 @@ export const initialState: F1State = {
   driverStandings: {},
   constructorStandings: {},
   raceCalendar: {},
+  circuits: {},
   loading: false,
   error: null,
 };
@@ -54,4 +56,15 @@ export const f1Reducer = createReducer(
     raceCalendar: { ...state.raceCalendar, [season]: races }
   })),
   on(F1Actions.loadRaceCalendarFailure, (state, { error }) => ({ ...state, loading: false, error })),
+
+  on(F1Actions.loadCircuits, (state, { season }) => ({ 
+    ...state, 
+    loading: !state.circuits[season] 
+  })),
+  on(F1Actions.loadCircuitsSuccess, (state, { season, circuits }) => ({
+    ...state,
+    loading: false,
+    circuits: { ...state.circuits, [season]: circuits }
+  })),
+  on(F1Actions.loadCircuitsFailure, (state, { error }) => ({ ...state, loading: false, error })),
 );

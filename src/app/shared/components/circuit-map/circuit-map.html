@@ -1,0 +1,22 @@
+<div
+  [class]="
+    'relative group rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 flex items-center justify-center p-4 ' +
+    height
+  "
+>
+  @if (!failed()) {
+    <img
+      [src]="imageUrl"
+      [alt]="circuitName"
+      (error)="handleError($event)"
+      class="w-full h-full object-contain filter dark:invert dark:brightness-200 transition-transform group-hover:scale-110"
+    />
+  } @else {
+    <div class="text-5xl opacity-20 group-hover:scale-110 transition-transform select-none">🗺️</div>
+  }
+
+  <!-- Content Slot for badges/labels -->
+  <div class="absolute inset-0 pointer-events-none">
+    <ng-content></ng-content>
+  </div>
+</div>

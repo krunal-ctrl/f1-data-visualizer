@@ -53,4 +53,18 @@ export class F1Effects {
       )
     )
   );
+
+  loadCircuits$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(F1Actions.loadCircuits),
+      withLatestFrom(this.store.select(selectF1State)),
+      filter(([{ season }, state]) => !state.circuits[season]),
+      switchMap(([{ season }]) =>
+        this.f1ApiService.getCircuits(season).pipe(
+          map(circuits => F1Actions.loadCircuitsSuccess({ season, circuits })),
+          catchError(error => of(F1Actions.loadCircuitsFailure({ error: error.message })))
+        )
+      )
+    )
+  );
 }

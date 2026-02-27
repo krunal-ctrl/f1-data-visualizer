@@ -1,0 +1,15 @@
+.aspect-video {
+    img {
+        // High quality rendering for circuit lines
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+    }
+}
+
+// In dark mode, many F1 assets are delivered as black lines on white/transparent.
+// We invert them to get white lines on dark backgrounds.
+:host-context(.dark) {
+    .aspect-video img {
+        filter: invert(1) brightness(2);
+    }
+}

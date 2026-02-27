@@ -1,0 +1,10 @@
+img {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+}
+
+:host-context(.dark) {
+    img {
+        filter: invert(1) brightness(2);
+    }
+}

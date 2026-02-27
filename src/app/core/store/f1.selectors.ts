@@ -18,6 +18,11 @@ export const selectRaceCalendar = (season: string) => createSelector(
   (state) => state.raceCalendar[season] || null
 );
 
+export const selectCircuits = (season: string) => createSelector(
+  selectF1State,
+  (state) => state.circuits[season] || null
+);
+
 export const selectF1Loading = createSelector(
   selectF1State,
   (state) => state.loading
