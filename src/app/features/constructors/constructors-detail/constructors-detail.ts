@@ -7,6 +7,8 @@ import { LineChart } from '../../../shared/components/line-chart/line-chart';
 import { F1ApiService } from '../../../core/services/f1-api.service';
 import { getTeamColor } from '../../../shared/utils/team-colors.util';
 import { SeasonService } from '../../../core/services/season.service';
+import { ConstructorStanding } from '../../../core/models/team.model';
+import { ConstructorPerformance } from '../../../core/models/analytics.model';
 
 @Component({
   selector: 'app-constructors-detail',
@@ -27,8 +29,8 @@ export class ConstructorsDetail {
   selectedSeason = this.seasonService.selectedSeason();
 
   constructorId = signal('');
-  teamInfo = signal<any>(null);
-  raceResults = signal<any[]>([])
+  teamInfo = signal<ConstructorStanding | null>(null);
+  raceResults = signal<ConstructorPerformance[]>([])
   loading = signal(false);
 
   teamColors = computed(() => {
@@ -37,11 +39,13 @@ export class ConstructorsDetail {
   });
 
   pointsProgressionData = computed(() => {
-    if (!this.raceResults().length || !this.teamInfo()) return [];
+    const results = this.raceResults();
+    const info = this.teamInfo();
+    if (!results.length || !info) return [];
 
     return [{
-      name: this.teamInfo().Constructor.name,
-      series: this.raceResults().map(race => ({
+      name: info.constructor.name,
+      series: results.map((race: ConstructorPerformance) => ({
         name: `R${race.round}`,
         value: race.cumulativePoints,
         extra: {
@@ -49,7 +53,6 @@ export class ConstructorsDetail {
           raceName: race.raceName,
           pointsScored: race.totalPoints,
           isSprintRace: race.sprintResults.length > 0,
-          // Get driver breakdown for this race
           driverBreakdown: this.apiService.getDriverBreakDownForRace(race),
         }
       }))
@@ -58,32 +61,27 @@ export class ConstructorsDetail {
 
   teamDriversData = computed(() => {
     const races = this.raceResults();
-    if (!races.length || !this.teamInfo()) return [];
+    const info = this.teamInfo();
+    if (!races.length || !info) return [];
 
     const driverMap = new Map<string, any>();
     races.forEach(race => {
       this.apiService.getDriverBreakDownForRace(race).forEach(d => {
-
-        console.log('Driver aggregation:', driverMap);
-
-        if (!driverMap.has(d.Driver.driverId)) {
-          driverMap.set(d.Driver.driverId, {
-            Driver: d.Driver,
+        if (!driverMap.has(d.driver.driverId)) {
+          driverMap.set(d.driver.driverId, {
+            driver: d.driver,
             points: 0,
             sprintPoints: 0,
             totalPoints: 0
           });
         }
 
-        const agg = driverMap.get(d.Driver.driverId);
-
+        const agg = driverMap.get(d.driver.driverId);
         agg.points += d.points;
         agg.sprintPoints += d.sprintPoints;
         agg.totalPoints += d.points + d.sprintPoints;
       });
     });
-
-    console.log('Driver aggregation:', driverMap);
 
     return Array.from(driverMap.values());
   });
@@ -99,13 +97,14 @@ export class ConstructorsDetail {
   }
 
   loadTeamData(season: string) {
+    this.loading.set(true);
     // Get team from standings
     this.apiService.getConstructorStandings(season).subscribe({
       next: (standings) => {
-        const team = standings?.ConstructorStandings?.find(
-          (t: any) => t.Constructor.constructorId === this.constructorId()
+        const team = standings?.find(
+          (t: ConstructorStanding) => t.constructor.constructorId === this.constructorId()
         );
-        this.teamInfo.set(team);
+        this.teamInfo.set(team || null);
 
         if (team) {
           this.loadRaceResults(season);
@@ -134,13 +133,14 @@ export class ConstructorsDetail {
   }
 
   get averagePointsPerRace(): number {
-    if (!this.teamInfo()) return 0;
-    const points = parseInt(this.teamInfo().points);
+    const info = this.teamInfo();
+    if (!info) return 0;
+    const points = info.points;
     return parseFloat((points / 24).toFixed(1));
   }
 
   get bestRace(): number {
     if (!this.raceResults().length) return 0;
-    return Math.max(...this.raceResults().map(r => r.points));
+    return Math.max(...this.raceResults().map(r => r.totalPoints));
   }
 }

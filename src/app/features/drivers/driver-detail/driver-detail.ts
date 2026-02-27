@@ -7,6 +7,8 @@ import { F1ApiService } from '../../../core/services/f1-api.service';
 import { Card } from '../../../shared/components/card/card';
 import { BarChart } from '../../../shared/components/bar-chart/bar-chart';
 import { SeasonService } from '../../../core/services/season.service';
+import { DriverStanding } from '../../../core/models/driver.model';
+import { PerformanceResult } from '../../../core/models/analytics.model';
 
 @Component({
   selector: 'app-driver-detail',
@@ -28,23 +30,25 @@ export class DriverDetail {
   selectedSeason = this.seasonService.selectedSeason();
 
   driverId = signal<string>('');
-  driverInfo = signal<any>(null);
-  raceResults = signal<any>([]);
+  driverInfo = signal<DriverStanding | null>(null);
+  raceResults = signal<PerformanceResult[]>([]);
   loading = signal<boolean>(true);
 
   // Computed values
   pointsProgressionData = computed(() => {
-    if (!this.raceResults().length || !this.driverInfo()) return [];
+    const results = this.raceResults();
+    const info = this.driverInfo();
+    if (!results.length || !info) return [];
     
     return [{
-      name: this.driverInfo().Driver.code,
-      series: this.raceResults().map((result: any) => ({
+      name: info.driver.code,
+      series: results.map((result: PerformanceResult) => ({
         name: `R${result.round}`,
         value: result.cumulativePoints,
         extra: {
           raceName: result.raceName,
-          position: +result.position,
-          pointsScored: +result.totalPoints,
+          position: result.position,
+          pointsScored: result.totalPoints,
           round: result.round
         }
       }))
@@ -54,7 +58,7 @@ export class DriverDetail {
   positionsByRaceData = computed(() => {
     if (!this.raceResults().length) return [];
     
-    return this.raceResults().map((result: any) => ({
+    return this.raceResults().map((result: PerformanceResult) => ({
       name: `R${result.round}`,
       value: result.position,
       extra: {
@@ -67,7 +71,7 @@ export class DriverDetail {
   pointsScoredByRaceData = computed(() => {
     if (!this.raceResults().length) return [];
     
-    return this.raceResults().map((result: any) => ({
+    return this.raceResults().map((result: PerformanceResult) => ({
       name: `R${result.round}`,
       value: result.totalPoints,
       extra: {
@@ -91,10 +95,10 @@ export class DriverDetail {
     // Get driver from standings
     this.apiService.getDriverStandings(season).subscribe({
       next: (standings) => {
-        const driver = standings?.DriverStandings?.find(
-          (d: any) => d.Driver.driverId === this.driverId()
+        const driver = standings?.find(
+          (d: DriverStanding) => d.driver.driverId === this.driverId()
         );
-        this.driverInfo.set(driver);
+        this.driverInfo.set(driver || null);
         this.loading.set(false);
         if (driver) this.loadRaceResults(season);
       },
@@ -134,25 +138,25 @@ export class DriverDetail {
 
   get bestFinish(): number {
     if (!this.raceResults().length) return 0;
-    return Math.min(...this.raceResults().map((r: any) => r.position));
+    return Math.min(...this.raceResults().map((r: PerformanceResult) => r.position));
   }
 
   get podiums(): number {
-    return this.raceResults().filter((r: any) => r.position <= 3).length;
+    return this.raceResults().filter((r: PerformanceResult) => r.position <= 3).length;
   }
 
   get pointsFinishes(): number {
-    return this.raceResults().filter((r: any) => r.position <= 10).length;
+    return this.raceResults().filter((r: PerformanceResult) => r.position <= 10).length;
   }
 
   get averagePosition(): number {
     if (!this.raceResults().length) return 0;
-    const sum = this.raceResults().reduce((acc: number, r: any) => acc + r.position, 0);
+    const sum = this.raceResults().reduce((acc: number, r: PerformanceResult) => acc + r.position, 0);
     return parseFloat((sum / this.raceResults().length).toFixed(2));
   }
 
   get dnfCount(): number {
     // Positions > 20 typically indicate DNF
-    return this.raceResults().filter((r: any) => r.position > 20).length;
+    return this.raceResults().filter((r: PerformanceResult) => r.position > 20).length;
   }
 }

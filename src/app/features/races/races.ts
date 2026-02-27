@@ -6,6 +6,7 @@ import { Card } from '../../shared/components/card/card';
 import { Loading } from '../../shared/components/loading/loading';
 import { F1ApiService } from '../../core/services/f1-api.service';
 import { SeasonService } from '../../core/services/season.service';
+import { Race } from '../../core/models/race.model';
 
 @Component({
   selector: 'app-races',
@@ -23,7 +24,7 @@ export class Races {
   private apiService = inject(F1ApiService);
   private seasonService = inject(SeasonService);
 
-  raceCalendar = signal<any[]>([]);
+  raceCalendar = signal<Race[]>([]);
   loading = signal(true);
   searchTerm = signal('');
   selectedFilter = signal('all');
@@ -64,9 +65,9 @@ export class Races {
       const term = this.searchTerm().toLowerCase();
       races = races.filter(race =>
         race.raceName.toLowerCase().includes(term) ||
-        race.Circuit.circuitName.toLowerCase().includes(term) ||
-        race.Circuit.Location.country.toLowerCase().includes(term) ||
-        race.Circuit.Location.locality.toLowerCase().includes(term)
+        race.circuit.circuitName.toLowerCase().includes(term) ||
+        race.circuit.location.country.toLowerCase().includes(term) ||
+        race.circuit.location.locality.toLowerCase().includes(term)
       );
     }
 

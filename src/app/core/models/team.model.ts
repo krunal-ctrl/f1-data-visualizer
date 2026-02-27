@@ -4,12 +4,13 @@ export interface Constructor {
   name: string;
   nationality: string;
   url?: string;
+  color?: string; // Added for charts
 }
 
 export interface ConstructorStanding {
-  position: string;
+  position: number;
   positionText: string;
-  points: string;
-  wins: string;
-  Constructor: Constructor;
+  points: number;
+  wins: number;
+  constructor: Constructor;
 }

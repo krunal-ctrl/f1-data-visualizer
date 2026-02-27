@@ -57,15 +57,17 @@ export const TEAM_COLORS: { [key: string]: TeamColor } = {
   }
 };
 
-export function getTeamColor(constructorId: string): TeamColor {
-  return TEAM_COLORS[constructorId] || {
+export function getTeamColor(constructorId: string | null | undefined): TeamColor {
+  const defaultColor: TeamColor = {
     primary: '#00f0ff',
     secondary: '#1a1a1a',
     text: '#FFFFFF'
   };
+
+   return (constructorId && TEAM_COLORS[constructorId]) || defaultColor;
 }
 
-export function getTeamPrimaryColor(constructorId: string): string {
+export function getTeamPrimaryColor(constructorId: string | null | undefined): string {
   return getTeamColor(constructorId).primary;
 }
 

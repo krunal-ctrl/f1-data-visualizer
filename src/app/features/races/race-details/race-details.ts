@@ -1,11 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { Card } from '../../../shared/components/card/card';
 import { Loading } from '../../../shared/components/loading/loading';
 import { F1ApiService } from '../../../core/services/f1-api.service';
 import { forkJoin, finalize } from 'rxjs';
 import { getTeamPrimaryColor } from '../../../shared/utils/team-colors.util';
+import { Race, RaceResult, QualifyingResult } from '../../../core/models/race.model';
 
 @Component({
   selector: 'app-race-details',
@@ -18,15 +19,14 @@ import { getTeamPrimaryColor } from '../../../shared/utils/team-colors.util';
   templateUrl: './race-details.html',
   styleUrl: './race-details.scss',
 })
-export class RaceDetails {
+export class RaceDetails implements OnInit {
   private apiService = inject(F1ApiService);
   private route = inject(ActivatedRoute);
-  // private seasonService = inject(SeasonService);
 
   season = signal<string>('');
   round = signal<string>('');
-  raceDetails = signal<any>(null);
-  qualifyingResults = signal<any[]>([]);
+  raceDetails = signal<Race | null>(null);
+  qualifyingResults = signal<QualifyingResult[]>([]);
   loading = signal(true);
   activeTab = signal<'results' | 'qualifying'>('results');
 
@@ -67,24 +67,28 @@ export class RaceDetails {
     return time;
   }
 
-  get fastestLapDriver(): any {
-    if (!this.raceDetails()?.Results) return null;
-    return this.raceDetails().Results.find((r: any) => r.FastestLap?.rank === '1');
+  get fastestLapDriver(): RaceResult | null {
+    const results = this.raceDetails()?.results;
+    if (!results) return null;
+    return results.find((r: RaceResult) => r.fastestLap?.rank === 1) || null;
   }
 
-  get winner(): any {
-    if (!this.raceDetails()?.Results) return null;
-    return this.raceDetails().Results[0];
+  get winner(): RaceResult | null {
+    const results = this.raceDetails()?.results;
+    if (!results) return null;
+    return results[0];
   }
 
-  get podium(): any[] {
-    if (!this.raceDetails()?.Results) return [];
-    return this.raceDetails().Results.slice(0, 3);
+  get podium(): RaceResult[] {
+    const results = this.raceDetails()?.results;
+    if (!results) return [];
+    return results.slice(0, 3);
   }
 
   get dnfCount(): number {
-    if (!this.raceDetails()?.Results) return 0;
-    return this.raceDetails().Results.filter((r: any) =>
+    const results = this.raceDetails()?.results;
+    if (!results) return 0;
+    return results.filter((r: RaceResult) =>
       r.status !== 'Finished' && !r.status.includes('+')
     ).length;
   }

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AreaChart } from '../../shared/components/area-chart/area-chart';
@@ -10,6 +10,9 @@ import { PieChart } from '../../shared/components/pie-chart/pie-chart';
 import { F1ApiService } from '../../core/services/f1-api.service';
 import { SeasonService } from '../../core/services/season.service';
 import { finalize, forkJoin } from 'rxjs';
+import { DriverStanding } from '../../core/models/driver.model';
+import { ConstructorStanding } from '../../core/models/team.model';
+import { Race } from '../../core/models/race.model';
 
 @Component({
   selector: 'app-analytics',
@@ -25,14 +28,15 @@ import { finalize, forkJoin } from 'rxjs';
   ],
   templateUrl: './analytics.html',
   styleUrl: './analytics.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Analytics {
   private apiService = inject(F1ApiService);
   private seasonService = inject(SeasonService);
 
-  driverStandings = signal<any>(null);
-  constructorStandings = signal<any>(null);
-  raceCalendar = signal<any[]>([]);
+  driverStandings = signal<DriverStanding[]>([]);
+  constructorStandings = signal<ConstructorStanding[]>([]);
+  raceCalendar = signal<Race[]>([]);
   loading = signal(true);
 
   selectedDriver1 = signal<string>('');
@@ -60,9 +64,9 @@ export class Analytics {
           this.raceCalendar.set(races || []);
 
           // Set default comparison drivers (top 2)
-          if (drivers?.DriverStandings?.length >= 2) {
-            this.selectedDriver1.set(drivers.DriverStandings[0].Driver.driverId);
-            this.selectedDriver2.set(drivers.DriverStandings[1].Driver.driverId);
+          if (drivers.length >= 2) {
+            this.selectedDriver1.set(drivers[0].driver.driverId);
+            this.selectedDriver2.set(drivers[1].driver.driverId);
           }
         }, error: err => {
           console.error('Error loading race data:', err);
@@ -72,7 +76,7 @@ export class Analytics {
 
   // Championship Prediction
   championshipPrediction = computed(() => {
-    const standings = this.driverStandings()?.DriverStandings || [];
+    const standings = this.driverStandings();
     if (standings.length === 0) return [];
 
     const racesRemaining = this.getRacesRemaining();
@@ -82,11 +86,11 @@ export class Analytics {
     const maxPointsFromSprints = sprintRacesRemaining * 8; // Sprint: 8-7-6-5-4-3-2-1
     const maxPointsAvailable = maxPointsFromRaces + maxPointsFromSprints;
 
-    const leaderPoints = parseInt(standings[0].points);
+    const leaderPoints = standings[0].points;
 
     // Find all drivers who can mathematically win
-    const contenders = standings.filter((driver: any) => {
-      const driverPoints = parseInt(driver.points);
+    const contenders = standings.filter((driver: DriverStanding) => {
+      const driverPoints = driver.points;
       const maxPossiblePoints = driverPoints + maxPointsAvailable;
       return maxPossiblePoints >= leaderPoints;
     });
@@ -94,8 +98,8 @@ export class Analytics {
     if (contenders.length === 0) return [];
 
     // Calculate win probability for each contender
-    const predictions = contenders.map((driver: any) => {
-      const driverPoints = parseInt(driver.points);
+    const predictions = contenders.map((driver: DriverStanding) => {
+      const driverPoints = driver.points;
       const pointsGap = leaderPoints - driverPoints;
 
       let winChance: number;
@@ -109,8 +113,8 @@ export class Analytics {
       } else {
         // Calculate based on multiple factors
         const gapPercentage = pointsGap / maxPointsAvailable;
-        const positionPenalty = (parseInt(driver.position) - 1) * 3;
-        const winsBonus = parseInt(driver.wins) * 2;
+        const positionPenalty = (driver.position - 1) * 3;
+        const winsBonus = driver.wins * 2;
 
         // Base probability inversely proportional to gap
         const baseProbability = (1 - gapPercentage) * 50;
@@ -130,7 +134,7 @@ export class Analytics {
     const totalChance = predictions.reduce((sum: number, p: any) => sum + p.winChance, 0);
 
     return predictions.map((p: any) => ({
-      name: `${p.driver.Driver.givenName} ${p.driver.Driver.familyName}`,
+      name: `${p.driver.driver.givenName} ${p.driver.driver.familyName}`,
       value: parseFloat((p.winChance / totalChance * 100).toFixed(1)),
       extra: {
         position: p.driver.position,
@@ -143,44 +147,44 @@ export class Analytics {
 
   // Points Distribution (Top 5)
   pointsDistribution = computed(() => {
-    const standings = this.driverStandings()?.DriverStandings || [];
-    return standings.slice(0, 5).map((s: any) => ({
-      name: s.Driver.familyName,
-      value: parseInt(s.points)
+    const standings = this.driverStandings();
+    return standings.slice(0, 5).map((s: DriverStanding) => ({
+      name: s.driver.familyName,
+      value: s.points
     }));
   });
 
   // Wins Distribution
   winsDistribution = computed(() => {
-    const standings = this.driverStandings()?.DriverStandings || [];
+    const standings = this.driverStandings();
     return standings
-      .filter((s: any) => parseInt(s.wins) > 0)
-      .map((s: any) => ({
-        name: s.Driver.familyName,
-        value: parseInt(s.wins)
+      .filter((s: DriverStanding) => s.wins > 0)
+      .map((s: DriverStanding) => ({
+        name: s.driver.familyName,
+        value: s.wins
       }));
   });
 
   // Team Performance Matrix
   teamPerformanceData = computed(() => {
-    const standings = this.constructorStandings()?.ConstructorStandings || [];
-    return standings.map((s: any) => ({
-      name: s.Constructor.name,
-      value: parseInt(s.points)
+    const standings = this.constructorStandings();
+    return standings.map((s: ConstructorStanding) => ({
+      name: s.constructor.name,
+      value: s.points
     }));
   });
 
   // Points Progression (Top 3 drivers)
   pointsProgressionData = computed(() => {
-    const standings = this.driverStandings()?.DriverStandings?.slice(0, 3) || [];
+    const standings = this.driverStandings().slice(0, 3);
     const races = this.raceCalendar().length;
 
-    return standings.map((driver: any) => {
-      const totalPoints = parseInt(driver.points);
+    return standings.map((driver: DriverStanding) => {
+      const totalPoints = driver.points;
       const avgPerRace = totalPoints / races;
 
       return {
-        name: driver.Driver.familyName,
+        name: driver.driver.familyName,
         series: Array.from({ length: races }, (_, i) => ({
           name: `R${i + 1}`,
           value: Math.floor(avgPerRace * (i + 1))
@@ -191,7 +195,7 @@ export class Analytics {
 
   // Statistical Leaders
   statisticalLeaders = computed(() => {
-    const standings = this.driverStandings()?.DriverStandings || [];
+    const standings = this.driverStandings();
     if (standings.length === 0) return {
       mostPoints: null,
       mostWins: null,
@@ -199,14 +203,14 @@ export class Analytics {
     };
 
     const mostPoints = standings[0];
-    const mostWins = standings.reduce((prev: any, curr: any) =>
-      parseInt(curr.wins) > parseInt(prev.wins) ? curr : prev
+    const mostWins = standings.reduce((prev: DriverStanding, curr: DriverStanding) =>
+      curr.wins > prev.wins ? curr : prev
     );
 
     // Consistency: points per race
-    const withConsistency = standings.map((s: any) => ({
+    const withConsistency = standings.map((s: DriverStanding) => ({
       ...s,
-      consistency: parseInt(s.points) / this.raceCalendar().length
+      consistency: s.points / this.raceCalendar().length
     }));
     const mostConsistent = withConsistency.reduce((prev: any, curr: any) =>
       curr.consistency > prev.consistency ? curr : prev
@@ -217,26 +221,26 @@ export class Analytics {
 
   // Comparison Data
   comparisonData = computed(() => {
-    const standings = this.driverStandings()?.DriverStandings || [];
-    const driver1 = standings.find((d: any) => d.Driver.driverId === this.selectedDriver1());
-    const driver2 = standings.find((d: any) => d.Driver.driverId === this.selectedDriver2());
+    const standings = this.driverStandings();
+    const driver1 = standings.find((d: DriverStanding) => d.driver.driverId === this.selectedDriver1());
+    const driver2 = standings.find((d: DriverStanding) => d.driver.driverId === this.selectedDriver2());
 
     if (!driver1 || !driver2) return null;
 
     return {
       driver1: {
-        name: `${driver1.Driver.givenName} ${driver1.Driver.familyName}`,
-        points: parseInt(driver1.points),
-        wins: parseInt(driver1.wins),
-        position: parseInt(driver1.position),
-        avgPointsPerRace: (parseInt(driver1.points) / this.raceCalendar().length).toFixed(1)
+        name: `${driver1.driver.givenName} ${driver1.driver.familyName}`,
+        points: driver1.points,
+        wins: driver1.wins,
+        position: driver1.position,
+        avgPointsPerRace: (driver1.points / this.raceCalendar().length).toFixed(1)
       },
       driver2: {
-        name: `${driver2.Driver.givenName} ${driver2.Driver.familyName}`,
-        points: parseInt(driver2.points),
-        wins: parseInt(driver2.wins),
-        position: parseInt(driver2.position),
-        avgPointsPerRace: (parseInt(driver2.points) / this.raceCalendar().length).toFixed(1)
+        name: `${driver2.driver.givenName} ${driver2.driver.familyName}`,
+        points: driver2.points,
+        wins: driver2.wins,
+        position: driver2.position,
+        avgPointsPerRace: (driver2.points / this.raceCalendar().length).toFixed(1)
       }
     };
   });
@@ -264,8 +268,8 @@ export class Analytics {
     ];
   });
 
-  get drivers(): any[] {
-    return this.driverStandings()?.DriverStandings || [];
+  get driversList(): DriverStanding[] {
+    return this.driverStandings();
   }
 
   getRacesRemaining(): number {
@@ -282,6 +286,6 @@ export class Analytics {
   getSprintRacesRemaining(): number {
     const now = new Date();
     const remainingRaces = this.raceCalendar().filter(race => new Date(race.date) > now);
-    return remainingRaces.filter(race => race?.Sprint?.date).length;
+    return remainingRaces.filter(race => race.sprint?.date).length;
   }
 }

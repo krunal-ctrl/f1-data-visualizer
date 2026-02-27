@@ -4,6 +4,7 @@ import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { cacheInterceptor } from './core/interceptors/cache.interceptor';
+import { errorInterceptor } from './core/interceptors/error.interceptor';
 import { provideAnimations  } from '@angular/platform-browser/animations';
 
 export const appConfig: ApplicationConfig = {
@@ -11,7 +12,7 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideZonelessChangeDetection(),
     provideRouter(routes),
-    provideHttpClient(withInterceptors([cacheInterceptor])),
+    provideHttpClient(withInterceptors([cacheInterceptor, errorInterceptor])),
     provideAnimations(),
   ]
 };

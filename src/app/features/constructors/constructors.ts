@@ -8,6 +8,7 @@ import { BarChart } from '../../shared/components/bar-chart/bar-chart';
 import { F1ApiService } from '../../core/services/f1-api.service';
 import { SeasonService } from '../../core/services/season.service';
 import { getTeamPrimaryColor } from '../../shared/utils/team-colors.util';
+import { ConstructorStanding } from '../../core/models/team.model';
 
 @Component({
   selector: 'app-constructors',
@@ -26,7 +27,7 @@ export class Constructors {
   private apiService = inject(F1ApiService);
   private seasonService = inject(SeasonService);
 
-  constructorStandings = signal<any>(null);
+  constructorStandings = signal<ConstructorStanding[]>([]);
   loading = signal(false);
   searchTerm = signal('');
 
@@ -51,14 +52,14 @@ export class Constructors {
   }
 
   filteredTeams = computed(() => {
-    let teams = this.constructorStandings()?.ConstructorStandings || [];
+    let teams = this.constructorStandings();
 
     // Filter by search term
     if (this.searchTerm()) {
       const term = this.searchTerm().toLowerCase();
-      teams = teams.filter((team: any) =>
-        team.Constructor.name.toLowerCase().includes(term) ||
-        team.Constructor.constructorId.toLowerCase().includes(term)
+      teams = teams.filter((team: ConstructorStanding) =>
+        team.constructor.name.toLowerCase().includes(term) ||
+        team.constructor.constructorId.toLowerCase().includes(term)
       );
     }
 
@@ -66,16 +67,16 @@ export class Constructors {
   })
 
   pointsChartData(): any {
-    return this.filteredTeams().map((team: any) => ({
-      name: team.Constructor.name,
-      value: parseInt(team.points, 10)
+    return this.filteredTeams().map((team: ConstructorStanding) => ({
+      name: team.constructor.name,
+      value: team.points
     }));
   }
 
   winsChartData(): any {
-    return this.filteredTeams().map((team: any) => ({
-      name: team.Constructor.name,
-      value: parseInt(team.wins, 10)
+    return this.filteredTeams().map((team: ConstructorStanding) => ({
+      name: team.constructor.name,
+      value: team.wins
     }));
   }
 

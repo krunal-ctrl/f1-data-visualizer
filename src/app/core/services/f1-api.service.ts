@@ -1,7 +1,12 @@
 import { HttpClient } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
 import { environment } from "../../../environments/environment";
-import { catchError, forkJoin, map, Observable, of } from "rxjs";
+import { catchError, forkJoin, map, Observable, of, throwError } from "rxjs";
+import { Driver, DriverStanding } from "../models/driver.model";
+import { Constructor, ConstructorStanding } from "../models/team.model";
+import { Race, RaceResult, QualifyingResult, Circuit } from "../models/race.model";
+import { PerformanceResult, DriverPerformance, ConstructorPerformance } from "../models/analytics.model";
+import { ErgastResponse } from "../models/api-response.model";
 import { MOCK_DRIVER_STANDINGS } from "../data/mock-driver-standings.data";
 import { MOCK_CONSTRUCTOR_STANDINGS } from "../data/mock-constructor-standings.data";
 import { MOCK_RACE_CALENDAR } from "../data/mock-race-calendar.data";
@@ -23,76 +28,194 @@ export class F1ApiService {
     private openF1ApiBaseUrl = environment.apiUrls.openf1;
     private useMockData = environment.useMockData;
 
+    // --- Mapping Helpers ---
+
+    private mapDriver(d: any): Driver {
+        return {
+            driverId: d.driverId,
+            permanentNumber: d.permanentNumber,
+            code: d.code,
+            givenName: d.givenName,
+            familyName: d.familyName,
+            dateOfBirth: d.dateOfBirth,
+            nationality: d.nationality,
+            url: d.url
+        };
+    }
+
+    private mapConstructor(c: any): Constructor {
+        return {
+            constructorId: c.constructorId,
+            name: c.name,
+            nationality: c.nationality,
+            url: c.url
+        };
+    }
+
+    private mapCircuit(c: any): Circuit {
+        return {
+            circuitId: c.circuitId,
+            circuitName: c.circuitName,
+            url: c.url,
+            location: {
+                lat: c.Location.lat,
+                long: c.Location.long,
+                locality: c.Location.locality,
+                country: c.Location.country
+            }
+        };
+    }
+
+    private mapRace(r: any): Race {
+        return {
+            season: r.season,
+            round: r.round,
+            raceName: r.raceName,
+            date: r.date,
+            time: r.time,
+            url: r.url,
+            circuit: this.mapCircuit(r.Circuit),
+            results: r.Results ? r.Results.map((res: any) => this.mapRaceResult(res)) : undefined,
+            qualifyingResults: r.QualifyingResults ? r.QualifyingResults.map((res: any) => this.mapQualifyingResult(res)) : undefined,
+            sprint: r.Sprint ? { date: r.Sprint.date, time: r.Sprint.time } : undefined
+        };
+    }
+
+    private mapRaceResult(r: any): RaceResult {
+        return {
+            number: Number(r.number),
+            position: Number(r.position),
+            positionText: r.positionText,
+            points: Number(r.points),
+            driver: this.mapDriver(r.Driver),
+            constructor: this.mapConstructor(r.Constructor),
+            grid: Number(r.grid),
+            laps: Number(r.laps),
+            status: r.status,
+            time: r.Time,
+            fastestLap: r.FastestLap ? {
+                rank: Number(r.FastestLap.rank),
+                lap: Number(r.FastestLap.lap),
+                time: r.FastestLap.Time,
+                // averageSpeed: {
+                //     units: r.FastestLap.AverageSpeed.units,
+                //     speed: r.FastestLap.AverageSpeed.speed
+                // }
+            } : undefined
+        };
+    }
+
+    private mapQualifyingResult(r: any): QualifyingResult {
+        return {
+            number: Number(r.number),
+            position: Number(r.position),
+            driver: this.mapDriver(r.Driver),
+            constructor: this.mapConstructor(r.Constructor),
+            q1: r.Q1,
+            q2: r.Q2,
+            q3: r.Q3
+        };
+    }
+
     getCurrentSeason(): string {
         return new Date().getFullYear().toString();
     }
 
     // Driver Standings
-    getDriverStandings(season?: string): Observable<any> {
+    getDriverStandings(season?: string): Observable<DriverStanding[]> {
         const year = season || this.getCurrentSeason();
         if (this.useMockData) {
             const mockData = MOCK_DRIVER_STANDINGS.find(item => item.season === year);
-            return of(mockData ? mockData.StandingsLists[0] : null);
+            const standings = mockData ? mockData.StandingsLists[0].DriverStandings : [];
+            return of(this.mapDriverStandings(standings));
         }
 
-        return this.http.get(`${this.ergastBaseUrl}/${year}/driverStandings.json`)
+        return this.http.get<ErgastResponse<any>>(`${this.ergastBaseUrl}/${year}/driverStandings.json`)
             .pipe(
-                map((response: any) => response.MRData.StandingsTable.StandingsLists[0]),
+                map(response => {
+                    const list = response.MRData.StandingsTable?.StandingsLists[0];
+                    return this.mapDriverStandings(list?.DriverStandings || []);
+                }),
                 catchError(error => {
                     console.error('Error fetching driver standings:', error);
-                    console.log('Falling back to mock data...');
-                    return of(null);
+                    return throwError(() => new Error('Failed to fetch driver standings'));
                 })
             );
+    }
+
+    private mapDriverStandings(standings: any[]): DriverStanding[] {
+        return standings.map(s => ({
+            position: Number(s.position),
+            positionText: s.positionText,
+            points: Number(s.points),
+            wins: Number(s.wins),
+            driver: this.mapDriver(s.Driver),
+            constructors: s.Constructors.map((c: any) => this.mapConstructor(c))
+        }));
     }
 
     // Constructor Standings
-    getConstructorStandings(season?: string): Observable<any> {
+    getConstructorStandings(season?: string): Observable<ConstructorStanding[]> {
         const year = season || this.getCurrentSeason();
         if (this.useMockData) {
             const mockData = MOCK_CONSTRUCTOR_STANDINGS.find(item => item.season === year);
-            return of(mockData ? mockData.StandingsLists[0] : null);
+            const standings = mockData ? mockData.StandingsLists[0].ConstructorStandings : [];
+            return of(this.mapConstructorStandings(standings));
         }
 
-        return this.http.get(`${this.ergastBaseUrl}/${year}/constructorStandings.json`)
+        return this.http.get<ErgastResponse<any>>(`${this.ergastBaseUrl}/${year}/constructorStandings.json`)
             .pipe(
-                map((response: any) => response.MRData.StandingsTable.StandingsLists[0]),
+                map(response => {
+                    const list = response.MRData.StandingsTable?.StandingsLists[0];
+                    return this.mapConstructorStandings(list?.ConstructorStandings || []);
+                }),
                 catchError(error => {
                     console.error('Error fetching constructor standings:', error);
-                    console.log('Falling back to mock data...');
-                    return of(null);
+                    return throwError(() => new Error('Failed to fetch constructor standings'));
                 })
             );
     }
 
+    private mapConstructorStandings(standings: any[]): ConstructorStanding[] {
+        return standings.map(s => ({
+            position: Number(s.position),
+            positionText: s.positionText,
+            points: Number(s.points),
+            wins: Number(s.wins),
+            constructor: this.mapConstructor(s.Constructor)
+        }));
+    }
+
     // Race Calendar
-    getRaceCalendar(season?: string): Observable<any> {
+    getRaceCalendar(season?: string): Observable<Race[]> {
         const year = season || this.getCurrentSeason();
         if (this.useMockData) {
             const mockData = MOCK_RACE_CALENDAR.find(item => item.season === year)
-            return of(mockData ? mockData.Races : null);
+            return of(mockData ? mockData.Races.map((r: any) => this.mapRace(r)) : []);
         }
 
-        return this.http.get(`${this.ergastBaseUrl}/${year}.json`)
+        return this.http.get<ErgastResponse<any>>(`${this.ergastBaseUrl}/${year}.json`)
             .pipe(
-                map((response: any) => response.MRData.RaceTable.Races),
+                map(response => response.MRData.RaceTable?.Races.map(r => this.mapRace(r)) || []),
                 catchError(error => {
                     console.error('Error fetching race calendar:', error);
-                    console.log('Falling back to mock data...');
                     return of([]);
                 })
             );
     }
 
     // Race Results
-    getRaceResults(season: string, round: string): Observable<any> {
+    getRaceResults(season: string, round: string): Observable<Race | null> {
         if (this.useMockData) {
             return of(null);
         }
 
-        return this.http.get(`${this.ergastBaseUrl}/${season}/${round}/results.json`)
+        return this.http.get<ErgastResponse<any>>(`${this.ergastBaseUrl}/${season}/${round}/results.json`)
             .pipe(
-                map((response: any) => response.MRData.RaceTable.Races[0]),
+                map(response => {
+                    const race = response.MRData.RaceTable?.Races[0];
+                    return race ? this.mapRace(race) : null;
+                }),
                 catchError(error => {
                     console.error('Error fetching race results:', error);
                     return of(null);
@@ -101,14 +224,17 @@ export class F1ApiService {
     }
 
     // Driver Details
-    getDriverDetails(driverId: string): Observable<any> {
+    getDriverDetails(driverId: string): Observable<Driver | null> {
         if (this.useMockData) {
             return of(null);
         }
 
-        return this.http.get(`${this.ergastBaseUrl}/drivers/${driverId}.json`)
+        return this.http.get<ErgastResponse<any>>(`${this.ergastBaseUrl}/drivers/${driverId}.json`)
             .pipe(
-                map((response: any) => response.MRData.DriverTable.Drivers[0]),
+                map(response => {
+                    const driver = response.MRData.DriverTable?.Drivers[0];
+                    return driver ? this.mapDriver(driver) : null;
+                }),
                 catchError(error => {
                     console.error('Error fetching driver details:', error);
                     return of(null);
@@ -117,14 +243,17 @@ export class F1ApiService {
     }
 
     // Qualifying Results
-    getQualifyingResults(season: string, round: string): Observable<any> {
+    getQualifyingResults(season: string, round: string): Observable<Race | null> {
         if (this.useMockData) {
             return of(null);
         }
 
-        return this.http.get(`${this.ergastBaseUrl}/${season}/${round}/qualifying.json`)
+        return this.http.get<ErgastResponse<any>>(`${this.ergastBaseUrl}/${season}/${round}/qualifying.json`)
             .pipe(
-                map((response: any) => response.MRData.RaceTable.Races[0]),
+                map(response => {
+                    const race = response.MRData.RaceTable?.Races[0];
+                    return race ? this.mapRace(race) : null;
+                }),
                 catchError(error => {
                     console.error('Error fetching qualifying results:', error);
                     return of(null);
@@ -132,43 +261,43 @@ export class F1ApiService {
             );
     }
 
-    getDriverSprintResults(driverId: string, year: string): Observable<any[]> {
+    getDriverSprintResults(driverId: string, year: string): Observable<Race[]> {
         if (this.useMockData) {
             const mockData = MOCK_SPRINT_RESULTS.find(item => item.season === year && item.driverId === driverId);
-            return of(mockData ? mockData.Races : []);
+            return of(mockData ? mockData.Races.map((r: any) => this.mapRace(r)) : []);
         }
 
         return this.http
-            .get(`${this.ergastBaseUrl}/${year}/drivers/${driverId}/sprint.json?limit=100`)
+            .get<ErgastResponse<any>>(`${this.ergastBaseUrl}/${year}/drivers/${driverId}/sprint.json?limit=100`)
             .pipe(
-                map((res: any) => res.MRData.RaceTable.Races),
+                map(res => res.MRData.RaceTable?.Races.map(r => this.mapRace(r)) || []),
                 catchError(() => of([])),
             );
     }
 
-    getConstructorsSprintResults(constructorId: string, year: string): Observable<any[]> {
+    getConstructorsSprintResults(constructorId: string, year: string): Observable<Race[]> {
         if (this.useMockData) {
             const mockData = MOCK_SPRINT_TEAM_PERFORMANCE.find(item => item.season === year && item.constructorId === constructorId);
-            return of(mockData ? mockData.Races : []);
+            return of(mockData ? mockData.Races.map((r: any) => this.mapRace(r)) : []);
         }
 
         return this.http
-            .get(`${this.ergastBaseUrl}/${year}/constructors/${constructorId}/sprint.json?limit=100`)
+            .get<ErgastResponse<any>>(`${this.ergastBaseUrl}/${year}/constructors/${constructorId}/sprint.json?limit=100`)
             .pipe(
-                map((res: any) => res.MRData.RaceTable.Races),
+                map(res => res.MRData.RaceTable?.Races.map(r => this.mapRace(r)) || []),
                 catchError(() => of([])),
             );
     }
 
-    getDriverRaceResults(driverId: string, season?: string, includeSprint = true): Observable<any[]> {
+    getDriverRaceResults(driverId: string, season?: string, includeSprint = true): Observable<PerformanceResult[]> {
         const year = season || this.getCurrentSeason();
 
         const races$ = this.useMockData
-            ? of(MOCK_RACE_RESULTS.find(item => item.season === year && item.driverId === driverId)?.Races ?? [])
+            ? of(MOCK_RACE_RESULTS.find(item => item.season === year && item.driverId === driverId)?.Races.map(r => this.mapRace(r)) ?? [])
             : this.http
-                .get(`${this.ergastBaseUrl}/${year}/drivers/${driverId}/results.json?limit=100`)
+                .get<ErgastResponse<any>>(`${this.ergastBaseUrl}/${year}/drivers/${driverId}/results.json?limit=100`)
                 .pipe(
-                    map((response: any) => response.MRData.RaceTable.Races),
+                    map(response => response.MRData.RaceTable?.Races.map(r => this.mapRace(r)) || []),
                     catchError(error => {
                         console.error('Error fetching driver race results:', error);
                         return of([]);
@@ -181,13 +310,12 @@ export class F1ApiService {
 
 
         return forkJoin([races$, sprint$]).pipe(
-            map(([races, sprint]: [any[], any[]]) => {
+            map(([races, sprint]: [Race[], Race[]]) => {
                 let cumulativePoints = 0;
-                let i = 1;
-                return races.map((race: any) => {
-                    const result = race.Results?.[0];
+                return races.map((race: Race) => {
+                    const result = race.results?.[0];
                     const racePoints = Number(result?.points ?? 0);
-                    const sprintPoints = Number(sprint.find(s => s.round == race.round)?.SprintResults[0]?.points ?? 0);
+                    const sprintPoints = Number(sprint.find(s => s.round == race.round)?.results?.[0]?.points ?? 0);
                     const totalPoints = racePoints + sprintPoints;
 
                     cumulativePoints += totalPoints;
@@ -206,7 +334,7 @@ export class F1ApiService {
         );
     }
 
-    getMultipleDriversRaceResults(driverIds: string[], season?: string): Observable<any> {
+    getMultipleDriversRaceResults(driverIds: string[], season?: string): Observable<DriverPerformance[]> {
         const requests = driverIds.map(id => this.getDriverRaceResults(id, season));
         return forkJoin(requests).pipe(
             map(results => {
@@ -218,17 +346,17 @@ export class F1ApiService {
         );
     }
 
-    getConstructorRaceResults(constructorId: string, season?: string, includeSprint: boolean = true): Observable<any[]> {
+    getConstructorRaceResults(constructorId: string, season?: string, includeSprint: boolean = true): Observable<ConstructorPerformance[]> {
         const year = season || this.getCurrentSeason();
 
         const races$ = this.useMockData
-            ? of(MOCK_TEAM_PERFORMANCE.find(item => item.season === year && item.constructorId === constructorId)?.Races ?? [])
+            ? of(MOCK_TEAM_PERFORMANCE.find(item => item.season === year && item.constructorId === constructorId)?.Races.map(r => this.mapRace(r)) ?? [])
             : this.http
-                .get(`${this.ergastBaseUrl}/${year}/constructors/${constructorId}/results.json?limit=100`)
+                .get<ErgastResponse<any>>(`${this.ergastBaseUrl}/${year}/constructors/${constructorId}/results.json?limit=100`)
                 .pipe(
-                    map((response: any) => response.MRData.RaceTable.Races),
+                    map(response => response.MRData.RaceTable?.Races.map(r => this.mapRace(r)) || []),
                     catchError(error => {
-                        console.error('Error fetching driver race results:', error);
+                        console.error('Error fetching constructor race results:', error);
                         return of([]);
                     })
                 );
@@ -237,23 +365,21 @@ export class F1ApiService {
             ? this.getConstructorsSprintResults(constructorId, year)
             : of([]);
 
-        // Real API implementation
         return forkJoin([races$, sprint$]).pipe(
-            map(([races, sprint]: [any[], any[]]) => {
+            map(([races, sprint]: [Race[], Race[]]) => {
                 let cumulativePoints = 0;
 
-                return races.map((race: any) => {
-
-                    const raceResults = race.Results ?? [];
+                return races.map((race: Race) => {
+                    const raceResults = race.results ?? [];
                     const racePoints = raceResults.reduce(
-                        (sum: number, r: any) => sum + Number(r.points ?? 0),
+                        (sum: number, r: RaceResult) => sum + Number(r.points ?? 0),
                         0
                     );
 
                     const sprintRace = sprint.find(s => s.round == race.round);
-                    const sprintResults = sprintRace?.SprintResults ?? [];
+                    const sprintResults = sprintRace?.results ?? [];
                     const sprintPoints = sprintResults.reduce(
-                        (sum: number, r: any) => sum + Number(r.points ?? 0),
+                        (sum: number, r: RaceResult) => sum + Number(r.points ?? 0),
                         0
                     );
 
@@ -261,16 +387,12 @@ export class F1ApiService {
                     cumulativePoints += totalPoints;
 
                     return {
-                        round: Number(race.round),
-                        raceName: race.raceName,
-                        // position: Number(result?.position ?? 0),
-                        points: racePoints,
+                        ...race,
                         sprintPoints: sprintPoints,
                         totalPoints: totalPoints,
                         cumulativePoints,
-                        sprintResults: sprint.find(s => s.round == race.round)?.SprintResults ?? [],
-                        ...race,
-                    };
+                        sprintResults: sprintResults
+                    } as ConstructorPerformance;
                 });
             }),
             catchError(error => {
@@ -283,52 +405,59 @@ export class F1ApiService {
     getConstructorDrivers(constructorId: string, season?: string, includeSprint: boolean = true): Observable<any[]> {
         const year = season || this.getCurrentSeason();
 
-        // Get drivers from standings who belong to this team
-        const raceResults$ = this.getConstructorRaceResults(constructorId, year, includeSprint);
-        return of(this.getDriverBreakDownForRace(raceResults$));
+        return this.getConstructorRaceResults(constructorId, year, includeSprint).pipe(
+            map(results => {
+                return results.length > 0 ? this.getDriverBreakDownForRace(results[results.length - 1]) : [];
+            })
+        );
     }
 
-    getDriverBreakDownForRace(race: any): any[] {
-        return race.Results.map((r: any) => ({
-            Driver: r.Driver,
+    public getDriverBreakDownForRace(race: ConstructorPerformance): any[] {
+        return (race.results || []).map((r: RaceResult) => ({
+            driver: r.driver,
             points: Number(r.points),
-            sprintPoints: Number(race.sprintResults?.find((s: any) => s.Driver.driverId === r.Driver.driverId)?.points ?? 0),
+            sprintPoints: Number(race.sprintResults?.find((s: any) => s.driver.driverId === r.driver.driverId)?.points ?? 0),
             position: r.position
-        }))
+        }));
     }
 
-    getRaceDetails(season: string, round: string): Observable<any> {
+    getRaceDetails(season: string, round: string): Observable<Race | null> {
         const year = season || this.getCurrentSeason();
         if (this.useMockData) {
             const raceData = MOCK_DETAILED_RACE_RESULTS.find(item => item.season === year && item.round === round);
-            return of(raceData?.Races[0] || null);
+            return of(raceData?.Races[0] ? this.mapRace(raceData.Races[0]) : null);
         }
 
-        return this.http.get(`${this.ergastBaseUrl}/${year}/${round}/results.json`)
+        return this.http.get<ErgastResponse<any>>(`${this.ergastBaseUrl}/${year}/${round}/results.json`)
             .pipe(
-                map((response: any) => response.MRData.RaceTable.Races[0]),
+                map(response => {
+                    const race = response.MRData.RaceTable?.Races[0];
+                    return race ? this.mapRace(race) : null;
+                }),
                 catchError(error => {
                     console.error('Error fetching race details:', error);
-                    return of([]);
+                    return of(null);
                 })
             );
     }
 
-    getQualifyingDetails(season: string, round: string): Observable<any> {
+    getQualifyingDetails(season: string, round: string): Observable<QualifyingResult[]> {
         const year = season || this.getCurrentSeason();
         if (this.useMockData) {
             const raceData = MOCK_DETAILED_QUALIFYING_RESULTS.find(item => item.season === year && item.round === round);
-            return of(raceData?.Races[0].QualifyingResults || []);
+            return of(raceData?.Races[0].QualifyingResults.map((r: any) => this.mapQualifyingResult(r)) || []);
         }
 
-        return this.http.get(`${this.ergastBaseUrl}/${year}/${round}/qualifying.json`)
+        return this.http.get<ErgastResponse<any>>(`${this.ergastBaseUrl}/${year}/${round}/qualifying.json`)
             .pipe(
-                map((response: any) => response.MRData.RaceTable.Races[0]?.QualifyingResults || []),
+                map(response => {
+                    const race = response.MRData.RaceTable?.Races[0];
+                    return race?.QualifyingResults?.map((r: any) => this.mapQualifyingResult(r)) || [];
+                }),
                 catchError(error => {
                     console.error('Error fetching qualifying results:', error);
                     return of([]);
                 })
             );
     }
-
 }

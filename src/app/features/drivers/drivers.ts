@@ -8,14 +8,15 @@ import { Loading } from '../../shared/components/loading/loading';
 import { F1ApiService } from '../../core/services/f1-api.service';
 import { SeasonService } from '../../core/services/season.service';
 import { getTeamPrimaryColor } from '../../shared/utils/team-colors.util';
+import { DriverStanding } from '../../core/models/driver.model';
 
 @Component({
   selector: 'app-drivers',
   imports: [
-    CommonModule, 
-    RouterModule, 
+    CommonModule,
+    RouterModule,
     FormsModule,
-    Card, 
+    Card,
     Loading,
     BarChart
   ],
@@ -26,7 +27,7 @@ export class Drivers {
   private apiService = inject(F1ApiService);
   private seasonService = inject(SeasonService);
 
-  driverStandings = signal<any>(null);
+  driverStandings = signal<DriverStanding[]>([]);
   loading = signal(true);
   searchTerm = signal('');
   selectedTeam = signal('all');
@@ -51,24 +52,24 @@ export class Drivers {
     })
   }
 
-  get filteredDrivers(): any[] {
+  get filteredDrivers(): DriverStanding[] {
 
-    let drivers = this.driverStandings()?.DriverStandings || [];
+    let drivers = this.driverStandings();
 
     // Filter by search term
     if (this.searchTerm()) {
       const term = this.searchTerm().toLowerCase();
-      drivers = drivers.filter((d: any) => 
-        d.Driver.givenName.toLowerCase().includes(term) || 
-        d.Driver.familyName.toLowerCase().includes(term) ||
-        d.Driver.code.toLowerCase().includes(term)
+      drivers = drivers.filter((d: DriverStanding) =>
+        d.driver.givenName.toLowerCase().includes(term) ||
+        d.driver.familyName.toLowerCase().includes(term) ||
+        d.driver.code.toLowerCase().includes(term)
       );
     }
 
     // Filter by selected team
     if (this.selectedTeam() && this.selectedTeam() !== 'all') {
-      drivers = drivers.filter((d: any) => 
-        d.Constructors[0]?.constructorId === this.selectedTeam()
+      drivers = drivers.filter((d: DriverStanding) =>
+        d.constructors[0]?.constructorId === this.selectedTeam()
       );
     }
 
@@ -76,38 +77,38 @@ export class Drivers {
   }
 
   get teams(): string[] {
-    const drivers = this.driverStandings().DriverStandings || [];
+    const drivers = this.driverStandings();
     const teamsSet = new Set<string>(
-      drivers.map((d: any) => d.Constructors[0]?.constructorId)
+      drivers.map((d: DriverStanding) => d.constructors[0]?.constructorId).filter(Boolean)
     );
     return Array.from(teamsSet);
   }
 
   get pointsChartData(): any[] {
-    return this.filteredDrivers.slice(0, 10).map((d: any) => ({
-      name: d.Driver.code,
-      value: parseInt(d.points)
+    return this.filteredDrivers.slice(0, 10).map((d: DriverStanding) => ({
+      name: d.driver.code,
+      value: d.points
     }))
   }
 
   get winsChartData(): any[] {
     return this.filteredDrivers
       .slice(0, 10)
-      .filter((d: any) => parseInt(d.wins) > 0)
-      .map((d: any) => ({
-        name: d.Driver.code,
-        value: parseInt(d.wins)
+      .filter((d: DriverStanding) => d.wins > 0)
+      .map((d: DriverStanding) => ({
+        name: d.driver.code,
+        value: d.wins
       }));
   }
 
   get driverColors(): any[] {
-    return this.filteredDrivers.slice(0, 10).map((d: any) => ({
-      name: d.Driver.code,
-      value: this.getTeamColor(d.Constructors[0]?.constructorId)
+    return this.filteredDrivers.slice(0, 10).map((d: DriverStanding) => ({
+      name: d.driver.code,
+      value: this.getTeamColor(d.constructors[0]?.constructorId)
     }))
   }
 
-  getTeamColor(constructorId: string): string {
+  getTeamColor(constructorId: string | null | undefined): string {
     return getTeamPrimaryColor(constructorId);
   }
 }

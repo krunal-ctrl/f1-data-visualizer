@@ -9,13 +9,14 @@ export interface Driver {
   dateOfBirth: string;
   nationality: string;
   url?: string;
+  image?: string; // Added for UI
 }
 
 export interface DriverStanding {
-  position: string;
+  position: number;
   positionText: string;
-  points: string;
-  wins: string;
-  Driver: Driver;
-  Constructors: Constructor[];
+  points: number;
+  wins: number;
+  driver: Driver;
+  constructors: Constructor[];
 }

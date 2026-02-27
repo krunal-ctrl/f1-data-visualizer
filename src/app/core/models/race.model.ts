@@ -7,14 +7,20 @@ export interface Race {
   raceName: string;
   date: string;
   time?: string;
-  Circuit: Circuit;
+  circuit: Circuit;
+  results?: RaceResult[];
+  qualifyingResults?: QualifyingResult[];
+  sprint?: {
+    date: string;
+    time?: string;
+  };
   url?: string;
 }
 
 export interface Circuit {
   circuitId: string;
   circuitName: string;
-  Location: Location;
+  location: Location;
   url?: string;
 }
 
@@ -26,28 +32,38 @@ export interface Location {
 }
 
 export interface RaceResult {
-  number: string;
-  position: string;
+  number: number;
+  position: number;
   positionText: string;
-  points: string;
-  Driver: Driver;
-  Constructor: Constructor;
-  grid: string;
-  laps: string;
+  points: number;
+  driver: Driver;
+  constructor: Constructor;
+  grid: number;
+  laps: number;
   status: string;
-  Time?: {
+  time?: {
     millis: string;
     time: string;
   };
-  FastestLap?: {
-    rank: string;
-    lap: string;
-    Time: {
+  fastestLap?: {
+    rank: number;
+    lap: number;
+    time: {
       time: string;
     };
-    AverageSpeed: {
-      units: string;
-      speed: string;
-    };
+    // averageSpeed: {
+    //   units: string;
+    //   speed: string;
+    // };
   };
+}
+
+export interface QualifyingResult {
+  number: number;
+  position: number;
+  driver: Driver;
+  constructor: Constructor;
+  q1?: string;
+  q2?: string;
+  q3?: string;
 }
