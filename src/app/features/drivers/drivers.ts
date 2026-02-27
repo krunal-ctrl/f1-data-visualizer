@@ -1,14 +1,18 @@
 import { CommonModule } from '@angular/common';
-import { Component, effect, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, effect, inject, signal, ChangeDetectionStrategy, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { BarChart } from '../../shared/components/bar-chart/bar-chart';
 import { Card } from '../../shared/components/card/card';
 import { Loading } from '../../shared/components/loading/loading';
-import { F1ApiService } from '../../core/services/f1-api.service';
 import { SeasonService } from '../../core/services/season.service';
 import { getTeamPrimaryColor } from '../../shared/utils/team-colors.util';
 import { DriverStanding } from '../../core/models/driver.model';
+import { Store } from '@ngrx/store';
+import { F1Actions } from '../../core/store/f1.actions';
+import { selectDriverStandings, selectF1Loading } from '../../core/store/f1.selectors';
+import { toSignal, toObservable } from '@angular/core/rxjs-interop';
+import { switchMap, map } from 'rxjs';
 
 @Component({
   selector: 'app-drivers',
@@ -25,36 +29,30 @@ import { DriverStanding } from '../../core/models/driver.model';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Drivers {
-  private apiService = inject(F1ApiService);
+  private store = inject(Store);
   private seasonService = inject(SeasonService);
 
-  driverStandings = signal<DriverStanding[]>([]);
-  loading = signal(true);
+  driverStandings = toSignal(
+    toObservable(this.seasonService.selectedSeason).pipe(
+      switchMap(season => this.store.select(selectDriverStandings(season))),
+      map(data => data || [])
+    ),
+    { initialValue: [] }
+  );
+
+  loading = toSignal(this.store.select(selectF1Loading), { initialValue: false });
   searchTerm = signal('');
   selectedTeam = signal('all');
 
   constructor() {
     effect(() => {
-      this.loadDrivers(this.seasonService.selectedSeason());
+      this.store.dispatch(F1Actions.loadDriverStandings({ 
+        season: this.seasonService.selectedSeason() 
+      }));
     });
   }
 
-  private loadDrivers(season: string): void {
-    this.loading.set(true);
-    this.apiService.getDriverStandings(season).subscribe({
-      next: (data) => {
-        this.driverStandings.set(data);
-        this.loading.set(false);
-      },
-      error: (error) => {
-        console.error('Error fetching driver standings:', error);
-        this.loading.set(false);
-      }
-    })
-  }
-
   get filteredDrivers(): DriverStanding[] {
-
     let drivers = this.driverStandings();
 
     // Filter by search term

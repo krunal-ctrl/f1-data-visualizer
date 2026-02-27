@@ -1,12 +1,16 @@
-import { CommonModule } from '@angular/common';
 import { Component, computed, effect, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Card } from '../../shared/components/card/card';
 import { Loading } from '../../shared/components/loading/loading';
-import { F1ApiService } from '../../core/services/f1-api.service';
 import { SeasonService } from '../../core/services/season.service';
 import { Race } from '../../core/models/race.model';
+import { Store } from '@ngrx/store';
+import { F1Actions } from '../../core/store/f1.actions';
+import { selectRaceCalendar, selectF1Loading } from '../../core/store/f1.selectors';
+import { toSignal, toObservable } from '@angular/core/rxjs-interop';
+import { switchMap, map } from 'rxjs';
 
 @Component({
   selector: 'app-races',
@@ -22,31 +26,26 @@ import { Race } from '../../core/models/race.model';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Races {
-  private apiService = inject(F1ApiService);
+  private store = inject(Store);
   private seasonService = inject(SeasonService);
 
-  raceCalendar = signal<Race[]>([]);
-  loading = signal(true);
+  raceCalendar = toSignal(
+    toObservable(this.seasonService.selectedSeason).pipe(
+      switchMap(season => this.store.select(selectRaceCalendar(season))),
+      map(data => data || [])
+    ),
+    { initialValue: [] }
+  );
+
+  loading = toSignal(this.store.select(selectF1Loading), { initialValue: false });
   searchTerm = signal('');
   selectedFilter = signal('all');
 
   constructor() {
     effect(() => {
-      this.loadRaces(this.seasonService.selectedSeason());
-    });
-  }
-
-  loadRaces(year: string) {
-    this.loading.set(true);
-    this.apiService.getRaceCalendar(year).subscribe({
-      next: (data) => {
-        this.raceCalendar.set(data || []);
-        this.loading.set(false);
-      },
-      error: (err) => {
-        console.error('Error loading races:', err);
-        this.loading.set(false);
-      }
+      this.store.dispatch(F1Actions.loadRaceCalendar({ 
+        season: this.seasonService.selectedSeason() 
+      }));
     });
   }
 

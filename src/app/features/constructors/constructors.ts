@@ -1,14 +1,18 @@
-import { CommonModule } from '@angular/common';
 import { Component, computed, effect, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { Card } from '../../shared/components/card/card';
 import { Loading } from '../../shared/components/loading/loading';
 import { BarChart } from '../../shared/components/bar-chart/bar-chart';
-import { F1ApiService } from '../../core/services/f1-api.service';
 import { SeasonService } from '../../core/services/season.service';
 import { getTeamPrimaryColor } from '../../shared/utils/team-colors.util';
 import { ConstructorStanding } from '../../core/models/team.model';
+import { Store } from '@ngrx/store';
+import { F1Actions } from '../../core/store/f1.actions';
+import { selectConstructorStandings, selectF1Loading } from '../../core/store/f1.selectors';
+import { toSignal, toObservable } from '@angular/core/rxjs-interop';
+import { switchMap, map } from 'rxjs';
 
 @Component({
   selector: 'app-constructors',
@@ -25,30 +29,25 @@ import { ConstructorStanding } from '../../core/models/team.model';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Constructors {
-  private apiService = inject(F1ApiService);
+  private store = inject(Store);
   private seasonService = inject(SeasonService);
 
-  constructorStandings = signal<ConstructorStanding[]>([]);
-  loading = signal(false);
+  constructorStandings = toSignal(
+    toObservable(this.seasonService.selectedSeason).pipe(
+      switchMap(season => this.store.select(selectConstructorStandings(season))),
+      map(data => data || [])
+    ),
+    { initialValue: [] }
+  );
+
+  loading = toSignal(this.store.select(selectF1Loading), { initialValue: false });
   searchTerm = signal('');
 
   constructor() {
     effect(() => {
-      this.fetchConstructorStandings(this.seasonService.selectedSeason());
-    });
-  }
-
-  fetchConstructorStandings(season: string): void {
-    this.loading.set(true);
-    this.apiService.getConstructorStandings(season).subscribe({
-      next: (data) => {
-        this.constructorStandings.set(data);
-        this.loading.set(false);
-      },
-      error: (error) => {
-        console.error('Error fetching constructor standings:', error);
-        this.loading.set(false);
-      }
+      this.store.dispatch(F1Actions.loadConstructorStandings({ 
+        season: this.seasonService.selectedSeason() 
+      }));
     });
   }
 

@@ -1,5 +1,5 @@
-import { CommonModule } from '@angular/common';
 import { Component, computed, effect, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AreaChart } from '../../shared/components/area-chart/area-chart';
@@ -7,13 +7,16 @@ import { BarChart } from '../../shared/components/bar-chart/bar-chart';
 import { Card } from '../../shared/components/card/card';
 import { Loading } from '../../shared/components/loading/loading';
 import { PieChart } from '../../shared/components/pie-chart/pie-chart';
-import { F1ApiService } from '../../core/services/f1-api.service';
 import { SeasonService } from '../../core/services/season.service';
 import { AnalyticsService } from '../../core/services/analytics.service';
-import { finalize, forkJoin } from 'rxjs';
 import { DriverStanding } from '../../core/models/driver.model';
 import { ConstructorStanding } from '../../core/models/team.model';
 import { Race } from '../../core/models/race.model';
+import { Store } from '@ngrx/store';
+import { F1Actions } from '../../core/store/f1.actions';
+import { selectDriverStandings, selectConstructorStandings, selectRaceCalendar, selectF1Loading } from '../../core/store/f1.selectors';
+import { toSignal, toObservable } from '@angular/core/rxjs-interop';
+import { switchMap, map } from 'rxjs';
 
 @Component({
   selector: 'app-analytics',
@@ -32,48 +35,55 @@ import { Race } from '../../core/models/race.model';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Analytics {
-  private apiService = inject(F1ApiService);
+  private store = inject(Store);
   private seasonService = inject(SeasonService);
   private analyticsService = inject(AnalyticsService);
 
-  driverStandings = signal<DriverStanding[]>([]);
-  constructorStandings = signal<ConstructorStanding[]>([]);
-  raceCalendar = signal<Race[]>([]);
-  loading = signal(true);
+  driverStandings = toSignal(
+    toObservable(this.seasonService.selectedSeason).pipe(
+      switchMap(season => this.store.select(selectDriverStandings(season))),
+      map(data => data || [])
+    ),
+    { initialValue: [] }
+  );
+  
+  constructorStandings = toSignal(
+    toObservable(this.seasonService.selectedSeason).pipe(
+      switchMap(season => this.store.select(selectConstructorStandings(season))),
+      map(data => data || [])
+    ),
+    { initialValue: [] }
+  );
+  
+  raceCalendar = toSignal(
+    toObservable(this.seasonService.selectedSeason).pipe(
+      switchMap(season => this.store.select(selectRaceCalendar(season))),
+      map(data => data || [])
+    ),
+    { initialValue: [] }
+  );
+
+  loading = toSignal(this.store.select(selectF1Loading), { initialValue: false });
 
   selectedDriver1 = signal<string>('');
   selectedDriver2 = signal<string>('');
 
   constructor() {
     effect(() => {
-      this.loadAnalyticsData(this.seasonService.selectedSeason());
+      const season = this.seasonService.selectedSeason();
+      this.store.dispatch(F1Actions.loadDriverStandings({ season }));
+      this.store.dispatch(F1Actions.loadConstructorStandings({ season }));
+      this.store.dispatch(F1Actions.loadRaceCalendar({ season }));
     });
-  }
 
-  private loadAnalyticsData(year: string): void {
-    this.loading.set(true);
-
-    forkJoin({
-      drivers: this.apiService.getDriverStandings(year),
-      constructors: this.apiService.getConstructorStandings(year),
-      races: this.apiService.getRaceCalendar(year)
-    })
-      .pipe(finalize(() => this.loading.set(false)))
-      .subscribe({
-        next: ({ drivers, constructors, races }) => {
-          this.driverStandings.set(drivers);
-          this.constructorStandings.set(constructors);
-          this.raceCalendar.set(races || []);
-
-          // Set default comparison drivers (top 2)
-          if (drivers.length >= 2) {
-            this.selectedDriver1.set(drivers[0].driver.driverId);
-            this.selectedDriver2.set(drivers[1].driver.driverId);
-          }
-        }, error: err => {
-          console.error('Error loading race data:', err);
-        }
-      });
+    // Set default comparison drivers when data arrives
+    effect(() => {
+      const drivers = this.driverStandings();
+      if (drivers.length >= 2 && !this.selectedDriver1()) {
+        this.selectedDriver1.set(drivers[0].driver.driverId);
+        this.selectedDriver2.set(drivers[1].driver.driverId);
+      }
+    });
   }
 
   // Championship Prediction

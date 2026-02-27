@@ -1,15 +1,18 @@
 import { CommonModule } from '@angular/common';
-import { Component, effect, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, effect, inject, signal, ChangeDetectionStrategy, computed } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { Card } from '../../shared/components/card/card';
 import { Loading } from '../../shared/components/loading/loading';
 import { StatCard } from '../../shared/components/stat-card/stat-card';
-import { F1ApiService } from '../../core/services/f1-api.service';
 import { SeasonService } from '../../core/services/season.service';
-import { forkJoin, finalize } from 'rxjs';
+import { Store } from '@ngrx/store';
+import { F1Actions } from '../../core/store/f1.actions';
+import { selectDriverStandings, selectConstructorStandings, selectRaceCalendar, selectF1Loading } from '../../core/store/f1.selectors';
+import { toSignal, toObservable } from '@angular/core/rxjs-interop';
 import { DriverStanding } from '../../core/models/driver.model';
 import { ConstructorStanding } from '../../core/models/team.model';
 import { Race } from '../../core/models/race.model';
+import { switchMap, map } from 'rxjs';
 
 @Component({
   selector: 'app-dashboard',
@@ -26,52 +29,58 @@ import { Race } from '../../core/models/race.model';
 })
 export class Dashboard {
 
-  private apiService = inject(F1ApiService);
+  private store = inject(Store);
   private seasonService = inject(SeasonService);
 
-  driverStandings = signal<DriverStanding[]>([]);
-  constructorStandings = signal<ConstructorStanding[]>([]);
-  raceCalendar = signal<Race[]>([]);
-  loading = signal(true);
-  nextRace = signal<Race | null>(null);
+  // Reactive streams that switch selectors based on the current season
+  driverStandings = toSignal(
+    toObservable(this.seasonService.selectedSeason).pipe(
+      switchMap(season => this.store.select(selectDriverStandings(season))),
+      map(data => data || [])
+    ),
+    { initialValue: [] }
+  );
+  
+  constructorStandings = toSignal(
+    toObservable(this.seasonService.selectedSeason).pipe(
+      switchMap(season => this.store.select(selectConstructorStandings(season))),
+      map(data => data || [])
+    ),
+    { initialValue: [] }
+  );
+  
+  raceCalendar = toSignal(
+    toObservable(this.seasonService.selectedSeason).pipe(
+      switchMap(season => this.store.select(selectRaceCalendar(season))),
+      map(data => data || [])
+    ),
+    { initialValue: [] }
+  );
+
+  loading = toSignal(this.store.select(selectF1Loading), { initialValue: false });
+
+  nextRace = computed(() => {
+    const races = this.raceCalendar();
+    const now = new Date();
+    return races.find((race: Race) => new Date(race.date) > now) || null;
+  });
 
   constructor() {
+    // Dispatch actions when season changes
     effect(() => {
-      this.loadDashboardData(this.seasonService.selectedSeason());
+      const season = this.seasonService.selectedSeason();
+      this.store.dispatch(F1Actions.loadDriverStandings({ season }));
+      this.store.dispatch(F1Actions.loadConstructorStandings({ season }));
+      this.store.dispatch(F1Actions.loadRaceCalendar({ season }));
     });
   }
 
-  private loadDashboardData(season: string): void {
-    this.loading.set(true);
-
-    forkJoin({
-      drivers: this.apiService.getDriverStandings(season),
-      constructors: this.apiService.getConstructorStandings(season),
-      races: this.apiService.getRaceCalendar(season)
-    })
-      .pipe(finalize(() => this.loading.set(false)))
-      .subscribe({
-        next: ({ drivers, constructors, races }) => {
-          this.driverStandings.set(drivers);
-          this.constructorStandings.set(constructors);
-          this.raceCalendar.set(races);
-
-          const now = new Date();
-          const upcoming = races.find((race: Race) => new Date(race.date) > now);
-          this.nextRace.set(upcoming || null);
-        },
-        error: error => {
-          console.error('Error loading dashboard:', error);
-        }
-      });
-  }
-
   getTopDrivers(count: number = 3): DriverStanding[] {
-    return this.driverStandings().slice(0, count) || [];
+    return this.driverStandings().slice(0, count);
   }
 
   getTopTeams(count: number = 3): ConstructorStanding[] {
-    return this.constructorStandings().slice(0, count) || [];
+    return this.constructorStandings().slice(0, count);
   }
 
   getDaysUntilNextRace(): number {
